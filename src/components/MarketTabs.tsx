@@ -16,8 +16,9 @@ interface MarketTabsProps {
 export const MarketTabs = ({ value, onValueChange }: MarketTabsProps) => {
   return (
     <div className="w-full border-b border-border/50 bg-card/30 backdrop-blur-sm">
-      <Tabs value={value} onValueChange={onValueChange} className="w-full">
-        <TabsList className="w-full h-16 bg-transparent border-0 rounded-none justify-start gap-2 px-6">
+      <div className="container mx-auto px-6">
+        <Tabs value={value} onValueChange={onValueChange} className="w-full">
+          <TabsList className="w-full h-16 bg-transparent border-0 rounded-none justify-start gap-2 px-0">
           {markets.map((market) => {
             const Icon = market.icon;
             const isActive = value === market.id;
@@ -39,7 +40,8 @@ export const MarketTabs = ({ value, onValueChange }: MarketTabsProps) => {
             );
           })}
         </TabsList>
-      </Tabs>
+        </Tabs>
+      </div>
     </div>
   );
 };
