@@ -1,0 +1,114 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 222 47% 5%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 35% 8%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 40% 6%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 190 100% 50%;
+    --primary-foreground: 222 47% 5%;
+
+    --secondary: 263 70% 60%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 222 30% 12%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 190 100% 50%;
+    --accent-foreground: 222 47% 5%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 222 30% 15%;
+    --input: 222 30% 12%;
+    --ring: 190 100% 50%;
+
+    --radius: 0.5rem;
+
+    /* Custom tokens */
+    --neon-cyan: 190 100% 50%;
+    --neon-purple: 263 70% 60%;
+    --grid-color: 222 30% 10%;
+    --glow-cyan: 190 100% 50%;
+    --glow-purple: 263 70% 60%;
+    
+    /* Gradients */
+    --gradient-cyber: linear-gradient(135deg, hsl(190 100% 50% / 0.1), hsl(263 70% 60% / 0.1));
+    --gradient-glow: linear-gradient(90deg, hsl(190 100% 50% / 0.2), hsl(263 70% 60% / 0.2));
+    
+    /* Shadows */
+    --shadow-cyan: 0 0 20px hsl(190 100% 50% / 0.3);
+    --shadow-purple: 0 0 20px hsl(263 70% 60% / 0.3);
+    --shadow-elevated: 0 10px 40px hsl(222 47% 3% / 0.5);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-image: 
+      linear-gradient(hsl(var(--grid-color)) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--grid-color)) 1px, transparent 1px);
+    background-size: 50px 50px;
+    background-position: -1px -1px;
+  }
+
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap');
+}
+
+@layer utilities {
+  .text-neon-cyan {
+    color: hsl(var(--neon-cyan));
+  }
+  
+  .text-neon-purple {
+    color: hsl(var(--neon-purple));
+  }
+  
+  .glow-cyan {
+    box-shadow: var(--shadow-cyan);
+  }
+  
+  .glow-purple {
+    box-shadow: var(--shadow-purple);
+  }
+  
+  .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+  
+  .gradient-cyber {
+    background: var(--gradient-cyber);
+  }
+  
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+  
+  @keyframes glow {
+    from {
+      box-shadow: 0 0 10px hsl(var(--neon-cyan) / 0.2);
+    }
+    to {
+      box-shadow: 0 0 20px hsl(var(--neon-cyan) / 0.4);
+    }
+  }
+}
