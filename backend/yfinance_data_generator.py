@@ -108,7 +108,7 @@ class YFinanceDataGenerator:
         delta = prices.diff()
         gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
         loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
-        rs = gain / loss
+        rs = gain / loss.replace(0, np.inf)
         return 100 - (100 / (1 + rs))
     
     def generate_trading_signals(self, market_data: Dict[str, Any]) -> str:
