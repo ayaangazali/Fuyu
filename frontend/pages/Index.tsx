@@ -301,6 +301,7 @@ const Index = () => {
                                     <Tooltip 
                                         formatter={(value: number) => [`$${value.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, "Value"]}
                                         labelFormatter={(label) => new Date(label).toLocaleDateString('en-US')}
+                                        labelStyle={{ color: '#000000', fontWeight: '500' }}
                                     />
                                     <Area type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorValue)" />
                                 </AreaChart>
