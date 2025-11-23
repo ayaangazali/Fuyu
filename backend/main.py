@@ -52,7 +52,7 @@ if coinmarketcap:
     portfolio_service = PortfolioService(coinmarketcap)
 
 # Dependency providers
-from crypto_endpoints import router as crypto_router, get_coinmarketcap_service, get_portfolio_service
+from crypto_endpoints import router as crypto_router, get_coinmarketcap_service, get_portfolio_service, get_trading_agent
 
 def get_cmc_service_impl():
     return coinmarketcap
@@ -60,18 +60,24 @@ def get_cmc_service_impl():
 def get_portfolio_service_impl():
     return portfolio_service
 
+def get_trading_agent_impl():
+    return trading_agent
+
 # Include crypto router with dependencies
 app.include_router(
     crypto_router,
     dependencies=[
         Depends(get_cmc_service_impl),
-        Depends(get_portfolio_service_impl)
+        Depends(get_portfolio_service_impl),
+        Depends(get_trading_agent_impl)
     ]
 )
 
 # Override dependencies for the router
 app.dependency_overrides[get_coinmarketcap_service] = get_cmc_service_impl
 app.dependency_overrides[get_portfolio_service] = get_portfolio_service_impl
+app.dependency_overrides[get_trading_agent] = get_trading_agent_impl
+
 
 # Initialize scheduler service
 scheduler = get_scheduler(interval_minutes=5, symbols=['BTC-USD', 'ETH-USD', 'AAPL', 'TSLA'])

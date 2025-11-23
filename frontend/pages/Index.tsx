@@ -34,6 +34,8 @@ const Index = () => {
     const [marketPrices, setMarketPrices] = useState<Record<string, CryptoPrice>>({});
     const [selectedPeriod, setSelectedPeriod] = useState("1Y");
     const [chartData, setChartData] = useState<any[]>([]);
+    const [riskAnalysis, setRiskAnalysis] = useState<string>("Loading risk analysis...");
+    const [riskAnalysisTime, setRiskAnalysisTime] = useState<string>("");
 
     // Order history data matching screenshot
     const orderHistory = [
@@ -61,6 +63,35 @@ const Index = () => {
         }
     };
 
+    const fetchRiskAnalysis = async () => {
+        try {
+            const res = await fetch("http://localhost:8000/portfolio/risk-analysis");
+            if (res.ok) {
+                const data = await res.json();
+                setRiskAnalysis(data.analysis);
+                setRiskAnalysisTime(data.timestamp);
+            } else {
+                setRiskAnalysis("Risk analysis unavailable.");
+            }
+        } catch (error) {
+            console.error("Error fetching risk analysis:", error);
+            setRiskAnalysis("Failed to load risk analysis.");
+        }
+    };
+
+    // TODO: Implement order history fetching
+    // const fetchOrderHistory = async () => {
+    //     try {
+    //         const res = await fetch("http://localhost:8000/portfolio/orders");
+    //         if (res.ok) {
+    //             const data = await res.json();
+    //             setOrderHistory(data.orders || []);
+    //         }
+    //     } catch (error) {
+    //         console.error("Error fetching order history:", error);
+    //     }
+    // };
+
     const fetchData = async () => {
         setIsLoading(true);
         try {
@@ -84,6 +115,12 @@ const Index = () => {
             
             // 3. Fetch History
             await fetchHistory(selectedPeriod);
+
+            // 4. Fetch Risk Analysis (non-blocking)
+            fetchRiskAnalysis();
+
+            // 5. Fetch Order History
+            // fetchOrderHistory();
 
         } catch (error) {
             console.error("Error fetching data:", error);
@@ -169,7 +206,20 @@ const Index = () => {
                                 </span>
                                 <span className="text-green-600 text-base lg:text-lg font-medium whitespace-nowrap">+34,085.34 1Y</span>
                             </div>
-                            <p className="text-sm text-gray-500">Mar 1, 5:54:32 PM UTC-5 · USD · Disclaimer</p>
+                            <p className="text-sm text-gray-500">
+                                {portfolioData 
+                                    ? new Date(portfolioData.last_updated).toLocaleString('en-US', { 
+                                        month: 'short', 
+                                        day: 'numeric', 
+                                        hour: 'numeric', 
+                                        minute: '2-digit', 
+                                        second: '2-digit',
+                                        hour12: true,
+                                        timeZoneName: 'short'
+                                    })
+                                    : "Loading..."
+                                } · USD · Disclaimer
+                            </p>
                         </div>
 
                         {/* Period Selector */}
@@ -202,14 +252,31 @@ const Index = () => {
                                     <XAxis 
                                         dataKey="date" 
                                         stroke="#999" 
-                                        style={{ fontSize: '12px' }} 
+                                        style={{ fontSize: '12px' }}
                                         tickFormatter={(value) => {
                                             const date = new Date(value);
-                                            if (selectedPeriod === '1M' || selectedPeriod === '6M') {
-                                                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                                            // Format based on selected period
+                                            switch (selectedPeriod) {
+                                                case '1M':
+                                                    // Show day and month for 1 month
+                                                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                                                case '6M':
+                                                case 'YTD':
+                                                    // Show month and day for 6 months / YTD
+                                                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                                                case '1Y':
+                                                    // Show month and year for 1 year
+                                                    return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+                                                case '5Y':
+                                                case 'MAX':
+                                                    // Show month and year for 5 years / MAX
+                                                    return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+                                                default:
+                                                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                                             }
-                                            return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
                                         }}
+                                        interval="preserveStartEnd"
+                                        minTickGap={50}
                                     />
                                     <YAxis 
                                         stroke="#999" 
@@ -258,8 +325,18 @@ const Index = () => {
                                     </div>
                                 </div>
                             </div>
-                            <div className="border border-gray-300 bg-white p-6 rounded-xl shadow-sm">
-                                <p className="text-sm text-gray-700 text-center font-medium leading-relaxed">Risk analysis as of 11nov 2025 1130</p>
+                            <div className="space-y-2">
+                                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">RISK ANALYSIS</p>
+                                <div className="border border-gray-300 bg-white p-6 rounded-xl shadow-sm">
+                                    <p className="text-sm text-gray-700 font-medium leading-relaxed">
+                                        {riskAnalysis}
+                                    </p>
+                                    {riskAnalysisTime && (
+                                        <p className="text-xs text-gray-400 mt-2 text-right">
+                                            Analysis as of {riskAnalysisTime}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
                         </CardContent>
                     </Card>

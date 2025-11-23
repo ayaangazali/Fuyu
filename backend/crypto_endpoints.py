@@ -2,6 +2,10 @@ from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Dict, Optional
 from coinmarketcap_service import CoinMarketCapService
 from portfolio_service import PortfolioService
+from agent_service import TradingStrategyAgent
+from models import Strategy
+import datetime
+
 
 router = APIRouter()
 
@@ -12,6 +16,10 @@ def get_coinmarketcap_service():
 
 def get_portfolio_service():
     raise NotImplementedError("PortfolioService dependency not injected")
+
+def get_trading_agent():
+    raise NotImplementedError("TradingStrategyAgent dependency not injected")
+
 
 @router.get("/crypto/price/{symbol}")
 async def get_crypto_price(
@@ -102,3 +110,59 @@ async def get_portfolio_history(
         raise HTTPException(status_code=503, detail="Portfolio service unavailable")
     
     return await portfolio_service.get_portfolio_history(period)
+
+@router.get("/portfolio/risk-analysis")
+async def get_portfolio_risk_analysis(
+    trading_agent: TradingStrategyAgent = Depends(get_trading_agent),
+    portfolio_service: PortfolioService = Depends(get_portfolio_service)
+):
+    """Get AI-generated risk analysis for the portfolio"""
+    if not trading_agent:
+        raise HTTPException(status_code=503, detail="Trading agent unavailable")
+    
+    try:
+        # Get current holdings
+        portfolio_value = await portfolio_service.calculate_portfolio_value()
+        holdings = [p["symbol"] for p in portfolio_value["positions"]]
+        holdings_str = ", ".join(holdings)
+        
+        # Construct prompt
+        prompt = f"Analyze the market risk for a crypto portfolio containing: {holdings_str}. Focus on recent market news and volatility. Provide a concise 1-2 sentence risk summary."
+        
+        # Use agent to get analysis with web search
+        # We use a dummy strategy object as it's required by the chat method
+        from models import RiskProfile, StrategyLogic
+        dummy_strategy = Strategy(
+            strategy_id="portfolio_risk",
+            name="Portfolio Risk Analysis",
+            description="AI-powered portfolio risk analysis",
+            risk_profile=RiskProfile(
+                max_position_pct=100.0,
+                stop_loss_pct=0.0,
+                take_profit_pct=0.0
+            ),
+            logic=[]
+        )
+        
+        analysis = await trading_agent.chat(
+            message=prompt,
+            strategy=dummy_strategy,
+            market="crypto",
+            include_market_data=True,
+            include_web_search=True
+        )
+        
+        return {
+            "analysis": analysis,
+            "timestamp": datetime.datetime.now().strftime("%d%b %Y %H%M").lower()
+        }
+        
+    except Exception as e:
+        print(f"Risk analysis error: {e}")
+        import traceback
+        traceback.print_exc()
+        # Fallback if agent fails
+        return {
+            "analysis": "Market volatility remains high. Diversification recommended.",
+            "timestamp": datetime.datetime.now().strftime("%d%b %Y %H%M").lower()
+        }
