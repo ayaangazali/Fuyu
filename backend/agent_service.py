@@ -129,7 +129,7 @@ class TradingStrategyAgent:
         if include_web_search and self.desearch_available:
             # Extract symbol from strategy or use BTC as default
             symbol = "BTC"  # Could be enhanced to extract from strategy
-            web_data = self.desearch.get_market_news(symbol, timeframe='PAST_24_HOURS')
+            web_data = await self.desearch.get_market_news(symbol, timeframe='PAST_24_HOURS')
             if web_data and web_data.get('success'):
                 context_parts.append(f"\nRecent News & Sentiment:\n{web_data['summary']}")
                 if web_data.get('sources'):
