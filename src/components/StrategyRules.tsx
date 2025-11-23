@@ -2,79 +2,80 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, TrendingUp, AlertCircle } from "lucide-react";
 
-interface Rule {
-  id: string;
-  label: string;
-  type: "entry" | "exit" | "risk";
-  description: string;
-  active: boolean;
+interface StrategyRulesProps {
+  strategy: any; // Using any for flexibility with the dynamic JSON structure
 }
 
-const mockRules: Rule[] = [
-  {
-    id: "A",
-    label: "Entry Rule A",
-    type: "entry",
-    description: "Buy when price breaks above upper Dual Thrust band",
-    active: true,
-  },
-  {
-    id: "B",
-    label: "Position Sizing B",
-    type: "risk",
-    description: "Allocate 5% of portfolio per trade with 2x leverage",
-    active: true,
-  },
-  {
-    id: "C",
-    label: "Stop Loss C",
-    type: "exit",
-    description: "Exit if price drops 3% below entry point",
-    active: true,
-  },
-  {
-    id: "D",
-    label: "Take Profit D",
-    type: "entry",
-    description: "Close position at 8% profit target",
-    active: false,
-  },
-];
-
-const getRuleColor = (type: Rule["type"]) => {
+const getRuleColor = (type: string) => {
   switch (type) {
-    case "entry":
+    case "buy":
       return "text-neon-cyan border-neon-cyan/50 bg-neon-cyan/10";
-    case "exit":
+    case "sell":
       return "text-destructive border-destructive/50 bg-destructive/10";
     case "risk":
       return "text-neon-purple border-neon-purple/50 bg-neon-purple/10";
+    default:
+      return "text-muted-foreground border-border bg-muted/10";
   }
 };
 
-const getRuleIcon = (type: Rule["type"]) => {
+const getRuleIcon = (type: string) => {
   switch (type) {
-    case "entry":
+    case "buy":
       return TrendingUp;
-    case "exit":
+    case "sell":
       return AlertCircle;
     case "risk":
+      return CheckCircle2;
+    default:
       return CheckCircle2;
   }
 };
 
-export const StrategyRules = () => {
+export const StrategyRules = ({ strategy }: StrategyRulesProps) => {
+  // Transform strategy logic into displayable rules
+  const rules = [
+    ...strategy.logic.map((l: any, i: number) => ({
+      id: `L${i + 1}-Buy`,
+      label: `${l.indicator} Buy Condition`,
+      type: "buy",
+      description: l.buy.condition || `Threshold: ${l.buy.threshold?.join('-')}`,
+      active: true,
+    })),
+    ...strategy.logic.map((l: any, i: number) => ({
+      id: `L${i + 1}-Sell`,
+      label: `${l.indicator} Sell Condition`,
+      type: "sell",
+      description: l.sell.condition || `Threshold: ${l.sell.threshold?.join('-')}`,
+      active: true,
+    })),
+    {
+      id: "Risk-SL",
+      label: "Stop Loss",
+      type: "risk",
+      description: `Stop Loss at ${(strategy.risk_profile.stop_loss_pct * 100).toFixed(1)}%`,
+      active: true,
+    },
+    {
+      id: "Risk-TP",
+      label: "Take Profit",
+      type: "risk",
+      description: `Take Profit at ${(strategy.risk_profile.take_profit_pct * 100).toFixed(1)}%`,
+      active: true,
+    }
+  ];
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-bold text-foreground">Strategy Rules & Indicators</h3>
         <Badge variant="outline" className="border-primary/50 text-primary bg-primary/10">
-          {mockRules.filter(r => r.active).length} Active
+          {rules.filter(r => r.active).length} Active
         </Badge>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {mockRules.map((rule) => {
+        {rules.map((rule) => {
           const Icon = getRuleIcon(rule.type);
           return (
             <Card
@@ -95,7 +96,7 @@ export const StrategyRules = () => {
                     ${getRuleColor(rule.type)}
                   `}
                 >
-                  <span className="text-lg font-bold font-mono">{rule.id}</span>
+                  <span className="text-lg font-bold font-mono">{rule.id.split('-')[0]}</span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
