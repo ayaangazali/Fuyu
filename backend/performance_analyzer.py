@@ -110,8 +110,17 @@ class PerformanceAnalyzer:
             # Wait a bit for file to be fully written
             await asyncio.sleep(1)
             
-            with open(file_path, 'r') as f:
-                performance_data = json.load(f)
+            try:
+                with open(file_path, 'r') as f:
+                    performance_data = json.load(f)
+            except OSError as e:
+                print(f"File I/O error while opening {file_path}: {e}")
+                await websocket_manager.broadcast_analysis_status("idle", f"File I/O error: {e}")
+                return None
+            except json.JSONDecodeError as e:
+                print(f"JSON decode error in file {file_path}: {e}")
+                await websocket_manager.broadcast_analysis_status("idle", f"JSON decode error: {e}")
+                return None
             
             print(f"📈 Processing performance file: {file_path}")
             
