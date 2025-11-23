@@ -10,6 +10,9 @@ class TradingStrategyAgent:
     Enhanced Trading Strategy Agent with SpoonOS Real-Time Crypto Data
     """
     def __init__(self):
+        # Validate OpenAI API key presence
+        if not os.getenv("OPENAI_API_KEY"):
+            raise ValueError("OPENAI_API_KEY environment variable not set")
         # Initialize both OpenAI and SpoonOS for different capabilities
         self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         
