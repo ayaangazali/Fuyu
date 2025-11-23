@@ -118,18 +118,57 @@ class TradingStrategyAgent:
                 new_strategy=None
             )
 
+    def _get_symbol_for_market(self, market: str) -> str:
+        """
+        Get appropriate symbol based on market type
+        """
+        market_symbols = {
+            "crypto": "BTC-USD",
+            "stock": "SPY",      # S&P 500 ETF as stock market benchmark
+            "future": "ES=F",    # E-mini S&P 500 futures
+            "forex": "EURUSD=X"  # EUR/USD currency pair
+        }
+        return market_symbols.get(market.lower(), "BTC-USD")
+    
+    def _get_search_term_for_market(self, market: str) -> str:
+        """
+        Get appropriate search term for Desearch based on market type
+        """
+        search_terms = {
+            "crypto": "Bitcoin BTC",
+            "stock": "Stock Market S&P 500",
+            "future": "Futures Market",
+            "forex": "Forex EUR USD"
+        }
+        return search_terms.get(market.lower(), "Bitcoin BTC")
+    
+    def _get_market_description(self, market: str) -> str:
+        """
+        Get descriptive label for market type
+        """
+        market_descriptions = {
+            "crypto": "Cryptocurrencies",
+            "stock": "Stocks",
+            "future": "Futures",
+            "forex": "Forex"
+        }
+        return market_descriptions.get(market.lower(), "Cryptocurrencies")
+
     async def chat(self, message: str, strategy: Strategy, market: str = "crypto", include_market_data: bool = False, include_web_search: bool = False) -> str:
         # Gather context based on enabled modes
         context_parts = []
         
         if include_market_data:
-            market_data = await self.get_live_market_data("BTC-USD")
-            context_parts.append(f"Current Market Data: {json.dumps(market_data, indent=2)}")
+            # Use market-appropriate symbol
+            symbol = self._get_symbol_for_market(market)
+            market_data = await self.get_live_market_data(symbol)
+            market_label = market.capitalize()
+            context_parts.append(f"Current {market_label} Market Data ({symbol}): {json.dumps(market_data, indent=2)}")
         
         if include_web_search and self.desearch_available:
-            # Extract symbol from strategy or use BTC as default
-            symbol = "BTC"  # Could be enhanced to extract from strategy
-            web_data = self.desearch.get_market_news(symbol, timeframe='PAST_24_HOURS')
+            # Use market-appropriate search term
+            search_term = self._get_search_term_for_market(market)
+            web_data = await self.desearch.get_market_news(search_term, timeframe='PAST_24_HOURS')
             if web_data and web_data.get('success'):
                 context_parts.append(f"\nRecent News & Sentiment:\n{web_data['summary']}")
                 if web_data.get('sources'):
@@ -140,10 +179,11 @@ class TradingStrategyAgent:
         if context_parts:
             context_str = "\n\n".join(context_parts)
             market_label = market.capitalize()
+            market_description = self._get_market_description(market)
             prompt = f"""
             You are an expert quantitative trading assistant specializing in {market_label} markets with access to real-time data.
             
-            Market Context: {market_label} ({"Cryptocurrencies" if market == "crypto" else "Stocks" if market == "stock" else "Futures" if market == "future" else "Forex"})
+            Market Context: {market_label} ({market_description})
             
             {context_str}
             

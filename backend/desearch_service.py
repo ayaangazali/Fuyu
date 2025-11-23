@@ -4,6 +4,7 @@ Provides real-time news and sentiment from Web, Twitter/X, and Reddit
 """
 
 import os
+import asyncio
 from typing import Optional, Dict
 from desearch_py import Desearch
 
@@ -21,7 +22,7 @@ class DesearchService:
         self.available = True
         print("Desearch service initialized successfully")
     
-    def get_market_news(self, symbol: str, timeframe: str = 'PAST_24_HOURS') -> Optional[Dict]:
+    async def get_market_news(self, symbol: str, timeframe: str = 'PAST_24_HOURS') -> Optional[Dict]:
         """
         Get real-time news and sentiment for a trading symbol
         
@@ -38,10 +39,12 @@ class DesearchService:
             
             prompt = f'Latest news, market sentiment, and price action for {clean_symbol}'
             
-            result = self.client.ai_search(
+            # Wrap synchronous API call in asyncio.to_thread to avoid blocking
+            result = await asyncio.to_thread(
+                self.client.ai_search,
                 prompt=prompt,
                 tools=['Web', 'X (Twitter)', 'Reddit'],
-                model='ORBIT',
+                model="NOVA",
                 streaming=False,
                 date_filter=timeframe
             )
@@ -65,7 +68,7 @@ class DesearchService:
                 "error": str(e)
             }
     
-    def search_trading_topic(self, query: str, timeframe: str = 'PAST_24_HOURS') -> Optional[Dict]:
+    async def search_trading_topic(self, query: str, timeframe: str = 'PAST_24_HOURS') -> Optional[Dict]:
         """
         General search for trading-related topics
         
@@ -77,10 +80,12 @@ class DesearchService:
             Dictionary with search results
         """
         try:
-            result = self.client.ai_search(
+            # Wrap synchronous API call in asyncio.to_thread to avoid blocking
+            result = await asyncio.to_thread(
+                self.client.ai_search,
                 prompt=query,
                 tools=['Web', 'X (Twitter)', 'Reddit', 'Hacker News'],
-                model='ORBIT',
+                model="NOVA",
                 streaming=False,
                 date_filter=timeframe
             )

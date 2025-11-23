@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional, Any, Union
+from typing import List, Optional, Any, Union, Literal
 
 class RiskProfile(BaseModel):
     max_position_pct: float
@@ -38,6 +38,6 @@ class AnalysisResult(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     strategy: Strategy
-    market: str = "crypto"  # crypto, stock, future, forex
+    market: Literal["crypto", "stock", "future", "forex"] = "crypto"
     includeMarketData: bool = False
     includeWebSearch: bool = False
