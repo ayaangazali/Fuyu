@@ -9,7 +9,7 @@ import { Loader2, RefreshCw, Play } from "lucide-react";
 
 const Index = () => {
   const [selectedMarket, setSelectedMarket] = useState("crypto");
-  const { strategy, status, lastAnalysis, nextAnalysis, logs, isRunning, toggleCycle } = useStrategyCycle();
+  const { strategy, status, lastAnalysis, nextAnalysis, logs, isRunning, toggleCycle, isConnected } = useStrategyCycle();
 
   return (
     <div className="min-h-screen bg-background">

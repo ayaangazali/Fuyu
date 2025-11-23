@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Bot, User, Sparkles } from "lucide-react";
+import { Send, Bot, User, Sparkles, TrendingUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Message {
@@ -27,6 +27,7 @@ export const ChatInterface = ({ strategy }: ChatInterfaceProps) => {
   ]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [includeMarketData, setIncludeMarketData] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -61,6 +62,7 @@ export const ChatInterface = ({ strategy }: ChatInterfaceProps) => {
         body: JSON.stringify({
           message: newUserMessage.text,
           strategy: strategy,
+          includeMarketData: includeMarketData,
         }),
       });
 
@@ -153,6 +155,24 @@ export const ChatInterface = ({ strategy }: ChatInterfaceProps) => {
       </ScrollArea>
 
       <div className="p-4 bg-card/50 border-t border-border/50">
+        <div className="flex items-center gap-2 mb-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIncludeMarketData(!includeMarketData)}
+            className={`text-xs transition-all ${
+              includeMarketData 
+                ? "bg-neon-cyan/20 border-neon-cyan/50 text-neon-cyan" 
+                : "bg-background/50 border-border/50 text-muted-foreground"
+            }`}
+          >
+            <TrendingUp className="w-3 h-3 mr-1" />
+            {includeMarketData ? "Market Data ON" : "Market Data OFF"}
+          </Button>
+          <span className="text-xs text-muted-foreground">
+            {includeMarketData ? "Includes live market context" : "Normal chat mode"}
+          </span>
+        </div>
         <div className="flex gap-2">
           <Input
             value={inputValue}

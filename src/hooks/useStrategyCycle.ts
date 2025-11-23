@@ -45,17 +45,128 @@ export const useStrategyCycle = () => {
     const [nextAnalysis, setNextAnalysis] = useState<Date | null>(null);
     const [modificationCount, setModificationCount] = useState(0);
     const [logs, setLogs] = useState<string[]>([]);
-
     const [isRunning, setIsRunning] = useState(false);
+    const [isConnected, setIsConnected] = useState(false);
+
+    const wsRef = useRef<WebSocket | null>(null);
 
     const addLog = (msg: string) => setLogs(prev => [new Date().toLocaleTimeString() + ': ' + msg, ...prev].slice(0, 50));
 
+    const handleWebSocketMessage = (data: any) => {
+        switch (data.type) {
+            case 'strategy_update':
+                handleStrategyUpdate(data);
+                break;
+            case 'analysis_status':
+                handleAnalysisStatus(data);
+                break;
+            default:
+                console.log('Unknown WebSocket message type:', data.type);
+        }
+    };
+
+    const handleStrategyUpdate = (data: any) => {
+        const { action, new_strategy, feedback } = data;
+
+        addLog(`Strategy update received: ${action.toUpperCase()}`);
+        addLog(feedback);
+
+        if (action === 'modify' || action === 'replace') {
+            if (new_strategy) {
+                setStrategy(new_strategy);
+                if (action === 'modify') {
+                    setModificationCount(prev => prev + 1);
+                    addLog(`Strategy modified. Total modifications: ${modificationCount + 1}`);
+                } else {
+                    setModificationCount(0);
+                    addLog(`Strategy replaced with: ${new_strategy.name}`);
+                }
+            }
+        }
+
+        setStatus('idle');
+        setLastAnalysis(new Date());
+        setNextAnalysis(new Date(Date.now() + 5 * 60 * 1000));
+    };
+
+    const handleAnalysisStatus = (data: any) => {
+        const { status: newStatus, message } = data;
+
+        if (newStatus === 'analyzing') {
+            setStatus('analyzing');
+        } else if (newStatus === 'idle') {
+            setStatus('idle');
+        }
+
+        addLog(message);
+    };
+
+    // WebSocket connection management
+    useEffect(() => {
+        const connectWebSocket = () => {
+            try {
+                const ws = new WebSocket('ws://localhost:8000/ws');
+
+                ws.onopen = () => {
+                    console.log('WebSocket connected');
+                    setIsConnected(true);
+                    addLog('Connected to backend for real-time updates.');
+                };
+
+                ws.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        handleWebSocketMessage(data);
+                    } catch (error) {
+                        console.error('Error parsing WebSocket message:', error);
+                    }
+                };
+
+                ws.onclose = () => {
+                    console.log('WebSocket disconnected');
+                    setIsConnected(false);
+                    addLog('Disconnected from backend.');
+
+                    // Attempt to reconnect after 3 seconds
+                    if (isRunning) {
+                        setTimeout(connectWebSocket, 3000);
+                    }
+                };
+
+                ws.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    addLog('WebSocket connection error.');
+                };
+
+                wsRef.current = ws;
+            } catch (error) {
+                console.error('Failed to create WebSocket connection:', error);
+                addLog('Failed to connect to backend.');
+            }
+        };
+
+        if (isRunning) {
+            connectWebSocket();
+        } else if (wsRef.current) {
+            wsRef.current.close();
+            wsRef.current = null;
+            setIsConnected(false);
+        }
+
+        return () => {
+            if (wsRef.current) {
+                wsRef.current.close();
+                wsRef.current = null;
+            }
+        };
+    }, [isRunning]);
+
+    // Polling-based performance checking (fallback)
     useEffect(() => {
         let interval: NodeJS.Timeout;
 
-        if (isRunning) {
-            // Run immediately on start if not already running (handled by toggle)
-            // Set interval for subsequent runs
+        if (isRunning && !isConnected) {
+            // Fallback to polling if WebSocket is not connected
             interval = setInterval(() => {
                 checkPerformance();
             }, 5 * 60 * 1000); // 5 minutes
@@ -64,17 +175,57 @@ export const useStrategyCycle = () => {
         return () => {
             if (interval) clearInterval(interval);
         };
-    }, [isRunning]);
+    }, [isRunning, isConnected]);
 
-    const toggleCycle = () => {
+    const toggleCycle = async () => {
         if (isRunning) {
+            // Stop the cycle
             setIsRunning(false);
             addLog('Analysis cycle stopped by user.');
             setNextAnalysis(null);
+
+            // Stop the backend scheduler
+            try {
+                const response = await fetch('http://localhost:8000/scheduler/stop', {
+                    method: 'POST',
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    addLog('Backend scheduler stopped.');
+                    console.log('Scheduler status:', data.status);
+                } else {
+                    addLog('Warning: Failed to stop backend scheduler.');
+                }
+            } catch (error) {
+                console.error('Error stopping scheduler:', error);
+                addLog('Warning: Could not communicate with backend scheduler.');
+            }
         } else {
+            // Start the cycle
             setIsRunning(true);
             setNextAnalysis(new Date(Date.now() + 5 * 60 * 1000));
             addLog('Analysis cycle started. First analysis in 5 minutes.');
+
+            // Start the backend scheduler
+            try {
+                const response = await fetch('http://localhost:8000/scheduler/start', {
+                    method: 'POST',
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    addLog('Backend scheduler started successfully.');
+                    addLog(`Generating performance files every ${data.status.interval_minutes} minutes.`);
+                    console.log('Scheduler status:', data.status);
+                } else {
+                    const errorData = await response.json();
+                    addLog(`Backend scheduler error: ${errorData.message || 'Unknown error'}`);
+                }
+            } catch (error) {
+                console.error('Error starting scheduler:', error);
+                addLog('Warning: Could not start backend scheduler. WebSocket updates only.');
+            }
         }
     };
 
@@ -159,6 +310,7 @@ export const useStrategyCycle = () => {
         nextAnalysis,
         logs,
         isRunning,
+        isConnected,
         toggleCycle
     };
 };

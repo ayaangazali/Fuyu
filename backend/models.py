@@ -38,3 +38,4 @@ class AnalysisResult(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     strategy: Strategy
+    includeMarketData: bool = False

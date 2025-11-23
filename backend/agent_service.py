@@ -105,29 +105,42 @@ class TradingStrategyAgent:
                 new_strategy=None
             )
 
-    async def chat(self, message: str, strategy: Strategy) -> str:
-        # Get live market data for context
-        market_data = await self.get_live_market_data("BTC-USD")
-        
-        prompt = f"""
-        You are an expert quantitative trading assistant with access to real-time market data.
-        
-        Current Market Data: {json.dumps(market_data, indent=2)}
-        Current Strategy Context: {strategy.json()}
-        User Message: {message}
-        
-        Provide a helpful, professional response about the trading strategy based on both the strategy context and current market conditions.
-        Include relevant market insights when appropriate and focus on actionable advice.
-        """
+    async def chat(self, message: str, strategy: Strategy, include_market_data: bool = False) -> str:
+        if include_market_data:
+            # Get live market data for context when requested
+            market_data = await self.get_live_market_data("BTC-USD")
+            
+            prompt = f"""
+            You are an expert quantitative trading assistant with access to real-time market data.
+            
+            Current Market Data: {json.dumps(market_data, indent=2)}
+            Current Strategy Context: {strategy.json()}
+            User Message: {message}
+            
+            Provide a helpful response incorporating current market conditions and strategy context.
+            Keep it concise unless detailed analysis is specifically requested.
+            """
+            max_tokens = 600
+        else:
+            # Normal chat mode without market data
+            prompt = f"""
+            You are a helpful trading assistant. 
+            
+            Current Strategy: {strategy.name} (ID: {strategy.strategy_id})
+            User Message: {message}
+            
+            Provide a helpful response about the trading strategy. Keep it concise and focused.
+            """
+            max_tokens = 400
 
         try:
             response = self.client.chat.completions.create(
                 model="gpt-4-1106-preview",
                 messages=[
-                    {"role": "system", "content": "You are an expert quantitative trading assistant."},
+                    {"role": "system", "content": "You are a helpful and concise trading assistant. Keep responses brief unless detailed analysis is requested."},
                     {"role": "user", "content": prompt}
                 ],
-                max_tokens=800,
+                max_tokens=max_tokens,
                 temperature=0.7
             )
             

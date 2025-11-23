@@ -4,3 +4,9 @@ openai
 python-dotenv
 pydantic
 spoon-ai-sdk
+watchdog
+aiohttp
+yfinance
+pandas
+numpy
+websockets

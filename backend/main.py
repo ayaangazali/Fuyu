@@ -66,7 +66,7 @@ async def analyze_strategy(request: dict):
 @app.post("/chat")
 async def chat_with_agent(request: ChatRequest):
     try:
-        response = await trading_agent.chat(request.message, request.strategy)
+        response = await trading_agent.chat(request.message, request.strategy, request.includeMarketData)
         return {"response": response}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
