@@ -7,7 +7,7 @@ import yfinance as yf
 import json
 import pandas as pd
 import numpy as np
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 import asyncio
 import random
