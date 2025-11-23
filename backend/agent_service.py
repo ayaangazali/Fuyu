@@ -123,7 +123,14 @@ class TradingStrategyAgent:
         context_parts = []
         
         if include_market_data:
-            market_data = await self.get_live_market_data("BTC-USD")
+            symbol_map = {
+                "crypto": "BTC-USD",
+                "stock": "SPY",
+                "future": "ES=F",
+                "forex": "EURUSD=X"
+            }
+            symbol = symbol_map.get(market, "BTC-USD")
+            market_data = await self.get_live_market_data(symbol)
             context_parts.append(f"Current Market Data: {json.dumps(market_data, indent=2)}")
         
         if include_web_search and self.desearch_available:
