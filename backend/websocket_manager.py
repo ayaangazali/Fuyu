@@ -6,7 +6,6 @@ Broadcasts strategy changes to connected frontend clients
 from fastapi import WebSocket
 from typing import List, Dict, Any
 import json
-import asyncio
 from datetime import datetime
 
 class WebSocketManager:
