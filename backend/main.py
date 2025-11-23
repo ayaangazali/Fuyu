@@ -1,6 +1,6 @@
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from models import Strategy, PerformanceData, AnalysisResult,ChatRequest
+from models import Strategy, PerformanceData, AnalysisResult, ChatRequest
 from agent_service import TradingStrategyAgent
 from performance_analyzer import PerformanceAnalyzer
 from yfinance_data_generator import YFinanceDataGenerator
@@ -44,6 +44,34 @@ except Exception as e:
     import traceback
     traceback.print_exc()
     coinmarketcap = None
+
+# Initialize Portfolio Service
+portfolio_service = None
+if coinmarketcap:
+    from portfolio_service import PortfolioService
+    portfolio_service = PortfolioService(coinmarketcap)
+
+# Dependency providers
+from crypto_endpoints import router as crypto_router, get_coinmarketcap_service, get_portfolio_service
+
+def get_cmc_service_impl():
+    return coinmarketcap
+
+def get_portfolio_service_impl():
+    return portfolio_service
+
+# Include crypto router with dependencies
+app.include_router(
+    crypto_router,
+    dependencies=[
+        Depends(get_cmc_service_impl),
+        Depends(get_portfolio_service_impl)
+    ]
+)
+
+# Override dependencies for the router
+app.dependency_overrides[get_coinmarketcap_service] = get_cmc_service_impl
+app.dependency_overrides[get_portfolio_service] = get_portfolio_service_impl
 
 # Initialize scheduler service
 scheduler = get_scheduler(interval_minutes=5, symbols=['BTC-USD', 'ETH-USD', 'AAPL', 'TSLA'])
@@ -244,78 +272,3 @@ async def update_scheduler_config(interval_minutes: int = None, symbols: str = N
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-# CoinMarketCap API Endpoints
-
-@app.get("/crypto/price/{symbol}")
-async def get_crypto_price(symbol: str):
-    """Get real-time price for a cryptocurrency"""
-    if not coinmarketcap:
-        raise HTTPException(status_code=503, detail="CoinMarketCap service unavailable")
-    
-    try:
-        price_data = await coinmarketcap.get_latest_price(symbol)
-        if price_data:
-            return price_data
-        else:
-            raise HTTPException(status_code=404, detail=f"Price data not found for {symbol}")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/crypto/prices")
-async def get_multiple_crypto_prices(symbols: str):
-    """Get real-time prices for multiple cryptocurrencies (comma-separated)"""
-    if not coinmarketcap:
-        raise HTTPException(status_code=503, detail="CoinMarketCap service unavailable")
-    
-    try:
-        symbol_list = [s.strip() for s in symbols.split(',')]
-        price_data = await coinmarketcap.get_multiple_prices(symbol_list)
-        if price_data:
-            return price_data
-        else:
-            raise HTTPException(status_code=404, detail="Price data not found")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/crypto/global")
-async def get_global_crypto_metrics():
-    """Get global cryptocurrency market metrics"""
-    if not coinmarketcap:
-        raise HTTPException(status_code=503, detail="CoinMarketCap service unavailable")
-    
-    try:
-        metrics = await coinmarketcap.get_global_metrics()
-        if metrics:
-            return metrics
-        else:
-            raise HTTPException(status_code=500, detail="Failed to fetch global metrics")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/crypto/search/{query}")
-async def search_cryptocurrency(query: str):
-    """Search for cryptocurrencies by name or symbol"""
-    if not coinmarketcap:
-        raise HTTPException(status_code=503, detail="CoinMarketCap service unavailable")
-    
-    try:
-        results = await coinmarketcap.search_cryptocurrency(query)
-        return {"results": results, "count": len(results)}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/portfolio/value")
-async def get_portfolio_value():
-    """Get current portfolio value (mock data for now)"""
-    # TODO: Integrate with real portfolio tracking
-    return {
-        "total_value": 125430.50,
-        "total_change_24h": 2.35,
-        "positions": [
-            {"symbol": "BTC", "quantity": 0.5, "value": 48000.00},
-            {"symbol": "ETH", "quantity": 5.0, "value": 15000.00},
-            {"symbol": "SOL", "quantity": 100.0, "value": 12000.00}
-        ],
-        "last_updated": "2025-11-23T09:44:00Z"
-    }

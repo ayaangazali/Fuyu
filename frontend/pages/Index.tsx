@@ -5,32 +5,35 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendingUp, TrendingDown, RefreshCw, MoreVertical } from "lucide-react";
 
+// Interfaces for API data
+interface Position {
+    symbol: string;
+    quantity: number;
+    value: number;
+}
+
+interface PortfolioData {
+    total_value: number;
+    total_change_24h: number;
+    positions: Position[];
+    last_updated: string;
+}
+
+interface CryptoPrice {
+    name: string;
+    price: number;
+    percent_change_24h: number;
+    market_cap: number;
+    volume_24h: number;
+}
+
 const Index = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [activeTab, setActiveTab] = useState("positions");
-
-    // Mock chart data matching the screenshot
-    const chartData = [
-        { date: 'May 2021', value: 90000 },
-        { date: 'Jul 2021', value: 105000 },
-        { date: 'Sep 2021', value: 112000 },
-        { date: 'Nov 2021', value: 118000 },
-        { date: 'Jan 2022', value: 122000 },
-        { date: 'Mar 2022', value: 124304.56 },
-    ];
-
-    // Positions data matching screenshot
-    const positions = [
-        { symbol: 'NASDAQ:AMZN', icon: '🟠', side: 'Long', qty: 5, avgPrice: '184.63', lastPrice: '220.69', unrealizedPL: '+180.32', plPercent: '+19.53%', color: 'text-green-400' },
-        { symbol: 'AMEX:IVV', icon: 'ℹ️', side: 'Long', qty: 1, avgPrice: '531.08', lastPrice: '662.28', unrealizedPL: '+131.20', plPercent: '+24.70%', color: 'text-green-400' },
-        { symbol: 'NYSE:BRK.B', icon: '🅱️', side: 'Long', qty: 1, avgPrice: '416.25', lastPrice: '504.04', unrealizedPL: '+87.79', plPercent: '+21.09%', color: 'text-green-400' },
-        { symbol: 'AMEX:VTI', icon: '🔴', side: 'Long', qty: 5, avgPrice: '261.54', lastPrice: '323.80', unrealizedPL: '+311.30', plPercent: '+23.81%', color: 'text-green-400' },
-        { symbol: 'TVC:SPX', icon: '500', side: 'Long', qty: 1, avgPrice: '5,289.05', lastPrice: '6,602.99', unrealizedPL: '+1,313.94', plPercent: '+24.84%', color: 'text-green-400' },
-        { symbol: 'NASDAQ:TSLA', icon: '🔴', side: 'Long', qty: 2, avgPrice: '176.21', lastPrice: '391.09', unrealizedPL: '+429.76', plPercent: '+121.95%', color: 'text-green-400' },
-        { symbol: 'NASDAQ:AAPL', icon: '🍎', side: 'Long', qty: 2, avgPrice: '189.40', lastPrice: '271.49', unrealizedPL: '+164.18', plPercent: '+43.34%', color: 'text-green-400' },
-        { symbol: 'NASDAQ:MSFT', icon: '⚪', side: 'Long', qty: 1, avgPrice: '418.53', lastPrice: '472.12', unrealizedPL: '+53.59', plPercent: '+12.80%', color: 'text-green-400' },
-        { symbol: 'AMEX:VOO', icon: '🔴', side: 'Long', qty: 5, avgPrice: '487.33', lastPrice: '605.93', unrealizedPL: '+593.00', plPercent: '+24.34%', color: 'text-green-400' },
-    ];
+    const [portfolioData, setPortfolioData] = useState<PortfolioData | null>(null);
+    const [marketPrices, setMarketPrices] = useState<Record<string, CryptoPrice>>({});
+    const [selectedPeriod, setSelectedPeriod] = useState("1Y");
+    const [chartData, setChartData] = useState<any[]>([]);
 
     // Order history data matching screenshot
     const orderHistory = [
@@ -46,15 +49,56 @@ const Index = () => {
         { symbol: 'AMEX:IVV', icon: 'ℹ️', side: 'Buy', type: 'Stop', qty: 1, limitPrice: '', stopPrice: '530.99', fillPrice: '531.08', status: 'Filled', statusColor: 'text-green-400', time: '2024-05-17 11:52:16' },
     ];
 
+    const fetchHistory = async (period: string) => {
+        try {
+            const res = await fetch(`http://localhost:8000/portfolio/history?period=${period}`);
+            if (res.ok) {
+                const data = await res.json();
+                setChartData(data);
+            }
+        } catch (error) {
+            console.error("Error fetching history:", error);
+        }
+    };
+
     const fetchData = async () => {
         setIsLoading(true);
-        // Backend integration would go here
-        setTimeout(() => setIsLoading(false), 500);
+        try {
+            // 1. Fetch Portfolio Value
+            const portfolioRes = await fetch("http://localhost:8000/portfolio/value");
+            if (!portfolioRes.ok) throw new Error("Failed to fetch portfolio");
+            const portfolio: PortfolioData = await portfolioRes.json();
+            setPortfolioData(portfolio);
+
+            // 2. Fetch Real-time Prices for positions
+            const symbols = portfolio.positions.map(p => p.symbol).join(',');
+            if (symbols) {
+                const pricesRes = await fetch(`http://localhost:8000/crypto/prices?symbols=${symbols}`);
+                if (pricesRes.ok) {
+                    const pricesData = await pricesRes.json();
+                    if (pricesData.success && pricesData.data) {
+                        setMarketPrices(pricesData.data);
+                    }
+                }
+            }
+            
+            // 3. Fetch History
+            await fetchHistory(selectedPeriod);
+
+        } catch (error) {
+            console.error("Error fetching data:", error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     useEffect(() => {
         fetchData();
     }, []);
+
+    useEffect(() => {
+        fetchHistory(selectedPeriod);
+    }, [selectedPeriod]);
 
     return (
         <div className="min-h-screen bg-white">
@@ -63,11 +107,15 @@ const Index = () => {
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-6 text-sm">
                     <div className="space-y-1">
                         <p className="text-gray-400 text-xs font-medium">Account Balance</p>
-                        <p className="font-semibold text-base">26,093.15</p>
+                        <p className="font-semibold text-base">
+                            {portfolioData ? `$${portfolioData.total_value.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : "---"}
+                        </p>
                     </div>
                     <div className="space-y-1">
                         <p className="text-gray-400 text-xs font-medium">Equity</p>
-                        <p className="font-semibold text-base">29,358.23</p>
+                        <p className="font-semibold text-base">
+                            {portfolioData ? `$${portfolioData.total_value.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : "---"}
+                        </p>
                     </div>
                     <div className="space-y-1">
                         <p className="text-gray-400 text-xs font-medium">Realized P&L</p>
@@ -75,7 +123,9 @@ const Index = () => {
                     </div>
                     <div className="space-y-1">
                         <p className="text-gray-400 text-xs font-medium">Unrealized P&L</p>
-                        <p className="font-semibold text-base text-green-400">+3,265.08</p>
+                        <p className="font-semibold text-base text-green-400">
+                             {portfolioData ? `+$${(portfolioData.total_value * (portfolioData.total_change_24h / 100)).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : "---"}
+                        </p>
                     </div>
                     <div className="space-y-1">
                         <p className="text-gray-400 text-xs font-medium">Account margin</p>
@@ -83,7 +133,9 @@ const Index = () => {
                     </div>
                     <div className="space-y-1">
                         <p className="text-gray-400 text-xs font-medium">Available funds</p>
-                        <p className="font-semibold text-base">29,327.59</p>
+                        <p className="font-semibold text-base">
+                            {portfolioData ? `$${(portfolioData.total_value * 0.9).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : "---"}
+                        </p>
                     </div>
                     <div className="space-y-1">
                         <p className="text-gray-400 text-xs font-medium">Orders margin</p>
@@ -108,10 +160,12 @@ const Index = () => {
                     <div className="lg:col-span-2 space-y-6">
                         <div className="space-y-3">
                             <div className="flex flex-wrap items-center gap-3">
-                                <h2 className="text-4xl lg:text-5xl font-bold text-gray-900">$124,304.56</h2>
-                                <span className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-sm font-semibold flex items-center gap-1.5 whitespace-nowrap">
-                                    <TrendingUp className="w-4 h-4" />
-                                    37.78%
+                                <h2 className="text-4xl lg:text-5xl font-bold text-gray-900">
+                                    {portfolioData ? `$${portfolioData.total_value.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : "$---"}
+                                </h2>
+                                <span className={`px-3 py-1.5 rounded-lg text-sm font-semibold flex items-center gap-1.5 whitespace-nowrap ${portfolioData && portfolioData.total_change_24h >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                    {portfolioData && portfolioData.total_change_24h >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                                    {portfolioData ? `${Math.abs(portfolioData.total_change_24h)}%` : "--%"}
                                 </span>
                                 <span className="text-green-600 text-base lg:text-lg font-medium whitespace-nowrap">+34,085.34 1Y</span>
                             </div>
@@ -123,7 +177,8 @@ const Index = () => {
                             {['1M', '6M', 'YTD', '1Y', '5Y', 'MAX'].map((period) => (
                                 <button
                                     key={period}
-                                    className={`text-sm font-medium pb-2 whitespace-nowrap transition-colors ${period === '1Y'
+                                    onClick={() => setSelectedPeriod(period)}
+                                    className={`text-sm font-medium pb-2 whitespace-nowrap transition-colors ${selectedPeriod === period
                                             ? 'text-blue-600 border-b-2 border-blue-600'
                                             : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent'
                                         }`}
@@ -144,9 +199,28 @@ const Index = () => {
                                         </linearGradient>
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-                                    <XAxis dataKey="date" stroke="#999" style={{ fontSize: '12px' }} />
-                                    <YAxis stroke="#999" style={{ fontSize: '12px' }} domain={[80000, 130000]} />
-                                    <Tooltip />
+                                    <XAxis 
+                                        dataKey="date" 
+                                        stroke="#999" 
+                                        style={{ fontSize: '12px' }} 
+                                        tickFormatter={(value) => {
+                                            const date = new Date(value);
+                                            if (selectedPeriod === '1M' || selectedPeriod === '6M') {
+                                                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                                            }
+                                            return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+                                        }}
+                                    />
+                                    <YAxis 
+                                        stroke="#999" 
+                                        style={{ fontSize: '12px' }} 
+                                        domain={['auto', 'auto']}
+                                        tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                                    />
+                                    <Tooltip 
+                                        formatter={(value: number) => [`$${value.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, "Value"]}
+                                        labelFormatter={(label) => new Date(label).toLocaleDateString('en-US')}
+                                    />
                                     <Area type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorValue)" />
                                 </AreaChart>
                             </ResponsiveContainer>
@@ -173,10 +247,13 @@ const Index = () => {
                                 <div className="space-y-2">
                                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">TOTAL GAIN</p>
                                     <div className="bg-white border border-gray-200 p-5 rounded-xl shadow-sm min-h-[100px] flex flex-col justify-center">
-                                        <p className="text-2xl font-bold text-green-600 whitespace-nowrap">+$41,234.49</p>
-                                        <p className="text-sm text-green-600 flex items-center gap-1 mt-2">
-                                            <TrendingUp className="w-4 h-4" />
-                                            49.64%
+                                        <p className={`text-2xl font-bold whitespace-nowrap ${portfolioData && portfolioData.total_change_24h >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                            {portfolioData ? (portfolioData.total_change_24h >= 0 ? '+' : '-') : ''}
+                                            {portfolioData ? `$${Math.abs(portfolioData.total_value * (portfolioData.total_change_24h / 100)).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : "---"}
+                                        </p>
+                                        <p className={`text-sm flex items-center gap-1 mt-2 ${portfolioData && portfolioData.total_change_24h >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                            {portfolioData && portfolioData.total_change_24h >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                                            {portfolioData ? `${Math.abs(portfolioData.total_change_24h)}%` : "--%"}
                                         </p>
                                     </div>
                                 </div>
@@ -195,7 +272,7 @@ const Index = () => {
                             value="positions"
                             className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none text-white h-full px-6"
                         >
-                            Positions <span className="ml-2 text-gray-400">9</span>
+                            Positions <span className="ml-2 text-gray-400">{portfolioData ? portfolioData.positions.length : 0}</span>
                         </TabsTrigger>
                         <TabsTrigger
                             value="history"
@@ -219,7 +296,7 @@ const Index = () => {
                                     <thead>
                                         <tr className="border-b border-gray-200 bg-gray-50">
                                             <th className="text-left px-4 py-3 font-medium text-gray-600">Symbol</th>
-                                            <th className="text-left px-4 py-3 font-medium text-gray-600">Side ↑</th>
+                                            <th className="text-left px-4 py-3 font-medium text-gray-600">Side</th>
                                             <th className="text-left px-4 py-3 font-medium text-gray-600">Qty</th>
                                             <th className="text-left px-4 py-3 font-medium text-gray-600">Avg Fill Price</th>
                                             <th className="text-left px-4 py-3 font-medium text-gray-600">Take Profit</th>
@@ -227,41 +304,60 @@ const Index = () => {
                                             <th className="text-left px-4 py-3 font-medium text-gray-600">Last Price</th>
                                             <th className="text-left px-4 py-3 font-medium text-gray-600">Unrealized P&L</th>
                                             <th className="text-left px-4 py-3 font-medium text-gray-600">Unrealized P&L %</th>
-                                            <th className="text-left px-4 py-3 font-medium text-gray-600">Trad</th>
+                                            <th className="text-left px-4 py-3 font-medium text-gray-600">Trade</th>
                                             <th className="text-left px-4 py-3 font-medium text-gray-600"></th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {positions.map((position, idx) => (
-                                            <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                                                <td className="px-4 py-3">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-xs font-semibold text-orange-600">
-                                                            {position.symbol.split(':')[0].substring(0, 2)}
+                                        {portfolioData?.positions.map((position, idx) => {
+                                            const priceData = marketPrices[position.symbol];
+                                            const currentPrice = priceData ? priceData.price : 0;
+                                            const currentValue = currentPrice * position.quantity;
+                                            // Mock entry price as 90% of current price for demo purposes if not available
+                                            const entryPrice = currentPrice * 0.9; 
+                                            const unrealizedPL = currentValue - (entryPrice * position.quantity);
+                                            const plPercent = ((currentPrice - entryPrice) / entryPrice) * 100;
+                                            const isProfit = unrealizedPL >= 0;
+
+                                            return (
+                                                <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                                    <td className="px-4 py-3">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-xs font-semibold text-orange-600">
+                                                                {position.symbol.substring(0, 2)}
+                                                            </div>
+                                                            <span className="font-medium text-gray-900">{position.symbol}</span>
                                                         </div>
-                                                        <span className="font-medium text-gray-900">{position.symbol}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-4 py-3 text-blue-600 font-medium">{position.side}</td>
-                                                <td className="px-4 py-3 text-gray-900">{position.qty}</td>
-                                                <td className="px-4 py-3 text-gray-900">{position.avgPrice}</td>
-                                                <td className="px-4 py-3 text-gray-400">-</td>
-                                                <td className="px-4 py-3 text-gray-400">-</td>
-                                                <td className="px-4 py-3 text-gray-900 font-medium">{position.lastPrice}</td>
-                                                <td className="px-4 py-3">
-                                                    <span className={`${position.color} font-medium`}>{position.unrealizedPL}</span>
-                                                    <span className="text-gray-400 text-xs ml-1">USD</span>
-                                                </td>
-                                                <td className={`px-4 py-3 ${position.color} font-medium`}>{position.plPercent}</td>
-                                                <td className="px-4 py-3 text-gray-500">{position.qty === 5 ? (idx === 0 ? '923.' : idx === 3 ? '1,307.' : idx === 4 ? '5,289.' : idx === 8 ? '2,436.' : '531.') : (idx === 1 ? '531.' : idx === 2 ? '416.' : idx === 5 ? '352.' : idx === 6 ? '378.' : '418.')}</td>
-                                                <td className="px-4 py-3">
-                                                    <div className="flex items-center gap-2 text-gray-400">
-                                                        <button className="hover:text-gray-600">✏️</button>
-                                                        <button className="hover:text-gray-600">✕</button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-blue-600 font-medium">Long</td>
+                                                    <td className="px-4 py-3 text-gray-900">{position.quantity}</td>
+                                                    <td className="px-4 py-3 text-gray-900">${entryPrice.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                    <td className="px-4 py-3 text-gray-400">-</td>
+                                                    <td className="px-4 py-3 text-gray-400">-</td>
+                                                    <td className="px-4 py-3 text-gray-900 font-medium">
+                                                        {currentPrice ? `$${currentPrice.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : "Loading..."}
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <span className={`${isProfit ? 'text-green-500' : 'text-red-500'} font-medium`}>
+                                                            {isProfit ? '+' : ''}{unrealizedPL.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                                                        </span>
+                                                        <span className="text-gray-400 text-xs ml-1">USD</span>
+                                                    </td>
+                                                    <td className={`px-4 py-3 ${isProfit ? 'text-green-500' : 'text-red-500'} font-medium`}>
+                                                        {isProfit ? '+' : ''}{plPercent.toFixed(2)}%
+                                                    </td>
+                                                    <td className="px-4 py-3 text-gray-500">
+                                                        {currentValue.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0})}
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <div className="flex items-center gap-2 text-gray-400">
+                                                            <button className="hover:text-gray-600">✏️</button>
+                                                            <button className="hover:text-gray-600">✕</button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             </div>
