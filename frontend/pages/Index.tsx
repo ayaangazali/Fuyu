@@ -333,20 +333,281 @@ const Index = () => {
                         </div>
                     </TabsContent>
 
-                    {/* Other tabs placeholders */}
-                    <TabsContent value="orders" className="mt-0">
-                        <div className="bg-[#131722] text-white p-12 text-center rounded-b-lg">
-                            <p className="text-gray-400">No active orders</p>
-                        </div>
-                    </TabsContent>
-                    <TabsContent value="balance" className="mt-0">
-                        <div className="bg-[#131722] text-white p-12 text-center rounded-b-lg">
-                            <p className="text-gray-400">Balance history will appear here</p>
-                        </div>
-                    </TabsContent>
-                    <TabsContent value="journal" className="mt-0">
-                        <div className="bg-[#131722] text-white p-12 text-center rounded-b-lg">
-                            <p className="text-gray-400">Trading journal entries will appear here</p>
+                    {/* Strategies Tab */}
+                    <TabsContent value="strategies" className="mt-0">
+                        <div className="bg-white rounded-b-lg overflow-hidden border border-gray-200 p-8">
+                            <div className="max-w-6xl mx-auto">
+                                <div className="mb-6">
+                                    <h3 className="text-2xl font-semibold text-gray-900">Trading Strategies</h3>
+                                </div>
+                                
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                                    {/* Strategy Card 1 - Momentum Surge Hunter */}
+                                    <Card className="border-2 border-green-200 bg-green-50/30 hover:shadow-lg transition-all">
+                                        <CardContent className="p-6">
+                                            <div className="space-y-4">
+                                                <div className="flex items-start justify-between">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <h4 className="text-xl font-bold text-gray-900">Momentum Surge Hunter</h4>
+                                                            <span className="px-2.5 py-0.5 bg-green-500 text-white rounded-full text-xs font-bold">ACTIVE</span>
+                                                        </div>
+                                                        <p className="text-sm text-gray-600 mb-1">Captures explosive momentum breakouts with adaptive volatility filters</p>
+                                                        <p className="text-xs text-gray-500 flex items-center gap-1">
+                                                            <span>👤</span> Alex Chen
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                                    <p className="text-sm text-gray-700 leading-relaxed">
+                                                        Identifies explosive momentum breakouts using RSI divergence, MACD crossovers, and volume surge analysis. 
+                                                        The strategy employs adaptive volatility filters to avoid false breakouts and optimize entry timing during 
+                                                        high-momentum market conditions.
+                                                    </p>
+                                                </div>
+                                                
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div className="bg-white rounded-lg p-3 border border-gray-200">
+                                                        <p className="text-xs text-gray-500 mb-1">Win Rate</p>
+                                                        <p className="text-lg font-bold text-green-600">67.3%</p>
+                                                    </div>
+                                                    <div className="bg-white rounded-lg p-3 border border-gray-200">
+                                                        <p className="text-xs text-gray-500 mb-1">Avg Return</p>
+                                                        <p className="text-lg font-bold text-green-600">+3.2%</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center justify-between text-sm pt-2">
+                                                    <div>
+                                                        <span className="text-gray-500">CAGR</span>
+                                                        <span className="ml-2 text-green-600 font-bold">18.0%</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-500">Sharpe</span>
+                                                        <span className="ml-2 text-blue-600 font-bold">2.10</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-500">DD</span>
+                                                        <span className="ml-2 text-red-600 font-bold">5.0%</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="pt-2">
+                                                    <Button variant="outline" className="w-full border-gray-300">
+                                                        View Details
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+
+                                    {/* Strategy Card 2 - Volatility Compression Play */}
+                                    <Card className="border-2 border-gray-300 bg-gray-50/30 hover:shadow-lg transition-all">
+                                        <CardContent className="p-6">
+                                            <div className="space-y-4">
+                                                <div className="flex items-start justify-between">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <h4 className="text-xl font-bold text-gray-900">Volatility Compression Play</h4>
+                                                            <span className="px-2.5 py-0.5 bg-gray-400 text-white rounded-full text-xs font-bold">INACTIVE</span>
+                                                        </div>
+                                                        <p className="text-sm text-gray-600 mb-1">Exploits low volatility squeeze patterns followed by explosive moves</p>
+                                                        <p className="text-xs text-gray-500 flex items-center gap-1">
+                                                            <span>👤</span> Sarah Martinez
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                                    <p className="text-sm text-gray-700 leading-relaxed">
+                                                        Exploits Bollinger Band squeeze patterns where volatility contracts before explosive price movements. 
+                                                        Uses machine learning to detect low volatility zones and predict directional breakouts with high probability. 
+                                                        Ideal for range-bound markets transitioning to trending phases.
+                                                    </p>
+                                                </div>
+                                                
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div className="bg-white rounded-lg p-3 border border-gray-200">
+                                                        <p className="text-xs text-gray-500 mb-1">Win Rate</p>
+                                                        <p className="text-lg font-bold text-green-600">71.8%</p>
+                                                    </div>
+                                                    <div className="bg-white rounded-lg p-3 border border-gray-200">
+                                                        <p className="text-xs text-gray-500 mb-1">Avg Return</p>
+                                                        <p className="text-lg font-bold text-green-600">+5.1%</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center justify-between text-sm pt-2">
+                                                    <div>
+                                                        <span className="text-gray-500">CAGR</span>
+                                                        <span className="ml-2 text-green-600 font-bold">11.0%</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-500">Sharpe</span>
+                                                        <span className="ml-2 text-blue-600 font-bold">1.50</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-500">DD</span>
+                                                        <span className="ml-2 text-red-600 font-bold">6.0%</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="pt-2">
+                                                    <Button variant="outline" className="w-full border-gray-300">
+                                                        View Details
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+
+                                    {/* Strategy Card 3 - Swing Scalper Pro */}
+                                    <Card className="border-2 border-gray-300 bg-gray-50/30 hover:shadow-lg transition-all">
+                                        <CardContent className="p-6">
+                                            <div className="space-y-4">
+                                                <div className="flex items-start justify-between">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <h4 className="text-xl font-bold text-gray-900">Swing Scalper Pro</h4>
+                                                            <span className="px-2.5 py-0.5 bg-gray-400 text-white rounded-full text-xs font-bold">INACTIVE</span>
+                                                        </div>
+                                                        <p className="text-sm text-gray-600 mb-1">High-frequency swing trades on intraday momentum with tight stops</p>
+                                                        <p className="text-xs text-gray-500 flex items-center gap-1">
+                                                            <span>👤</span> Emma Rodriguez
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                                    <p className="text-sm text-gray-700 leading-relaxed">
+                                                        High-frequency scalping strategy that capitalizes on intraday swing patterns with precise entry and exit points. 
+                                                        Utilizes tight stop-losses and quick profit-taking to accumulate gains throughout the trading session. 
+                                                        Best suited for liquid stocks with consistent intraday volatility.
+                                                    </p>
+                                                </div>
+                                                
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div className="bg-white rounded-lg p-3 border border-gray-200">
+                                                        <p className="text-xs text-gray-500 mb-1">Win Rate</p>
+                                                        <p className="text-lg font-bold text-green-600">64.2%</p>
+                                                    </div>
+                                                    <div className="bg-white rounded-lg p-3 border border-gray-200">
+                                                        <p className="text-xs text-gray-500 mb-1">Avg Return</p>
+                                                        <p className="text-lg font-bold text-green-600">+4.8%</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center justify-between text-sm pt-2">
+                                                    <div>
+                                                        <span className="text-gray-500">CAGR</span>
+                                                        <span className="ml-2 text-green-600 font-bold">16.0%</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-500">Sharpe</span>
+                                                        <span className="ml-2 text-blue-600 font-bold">1.80</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-500">DD</span>
+                                                        <span className="ml-2 text-red-600 font-bold">4.0%</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="pt-2">
+                                                    <Button variant="outline" className="w-full border-gray-300">
+                                                        View Details
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+
+                                    {/* Strategy Card 4 - Trend Following Beast */}
+                                    <Card className="border-2 border-orange-200 bg-orange-50/30 hover:shadow-lg transition-all">
+                                        <CardContent className="p-6">
+                                            <div className="space-y-4">
+                                                <div className="flex items-start justify-between">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <h4 className="text-xl font-bold text-gray-900">Trend Following Beast</h4>
+                                                            <span className="px-2.5 py-0.5 bg-gray-400 text-white rounded-full text-xs font-bold">PAUSED</span>
+                                                        </div>
+                                                        <p className="text-sm text-gray-600 mb-1">Multi-timeframe trend confirmation with momentum surge detection</p>
+                                                        <p className="text-xs text-gray-500 flex items-center gap-1">
+                                                            <span>👤</span> David Park
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                                    <p className="text-sm text-gray-700 leading-relaxed">
+                                                        Multi-timeframe trend confirmation strategy that rides strong directional moves across daily, weekly, and monthly charts. 
+                                                        Combines moving average convergence with momentum surge detection to identify high-conviction trend entries. 
+                                                        Designed for capturing large market moves with optimal risk-reward ratios.
+                                                    </p>
+                                                </div>
+                                                
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div className="bg-white rounded-lg p-3 border border-gray-200">
+                                                        <p className="text-xs text-gray-500 mb-1">Win Rate</p>
+                                                        <p className="text-lg font-bold text-green-600">69.5%</p>
+                                                    </div>
+                                                    <div className="bg-white rounded-lg p-3 border border-gray-200">
+                                                        <p className="text-xs text-gray-500 mb-1">Avg Return</p>
+                                                        <p className="text-lg font-bold text-green-600">+6.3%</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center justify-between text-sm pt-2">
+                                                    <div>
+                                                        <span className="text-gray-500">CAGR</span>
+                                                        <span className="ml-2 text-green-600 font-bold">25.0%</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-500">Sharpe</span>
+                                                        <span className="ml-2 text-blue-600 font-bold">1.90</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-gray-500">DD</span>
+                                                        <span className="ml-2 text-red-600 font-bold">8.0%</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="pt-2">
+                                                    <Button variant="outline" className="w-full border-gray-300">
+                                                        View Details
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </div>
+
+                                {/* Strategy Performance Summary */}
+                                <Card className="border border-gray-200 bg-gradient-to-br from-gray-50 to-white">
+                                    <CardContent className="p-6">
+                                        <h4 className="text-lg font-semibold text-gray-900 mb-4">Overall Performance</h4>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                                            <div>
+                                                <p className="text-sm text-gray-600 mb-1">Total Strategies</p>
+                                                <p className="text-3xl font-bold text-gray-900">4</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-sm text-gray-600 mb-1">Active Strategies</p>
+                                                <p className="text-3xl font-bold text-green-600">1</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-sm text-gray-600 mb-1">Total Trades</p>
+                                                <p className="text-3xl font-bold text-gray-900">116</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-sm text-gray-600 mb-1">Avg Win Rate</p>
+                                                <p className="text-3xl font-bold text-green-600">69.2%</p>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
                         </div>
                     </TabsContent>
                 </Tabs>
