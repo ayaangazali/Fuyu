@@ -1,11 +1,12 @@
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from models import Strategy, PerformanceData, AnalysisResult, ChatRequest
+from models import Strategy, PerformanceData, AnalysisResult,ChatRequest
 from agent_service import TradingStrategyAgent
 from performance_analyzer import PerformanceAnalyzer
 from yfinance_data_generator import YFinanceDataGenerator
 from scheduler_service import get_scheduler
 from websocket_manager import websocket_manager
+from coinmarketcap_service import CoinMarketCapService
 
 import os
 from pathlib import Path
@@ -28,6 +29,21 @@ app.add_middleware(
 trading_agent = TradingStrategyAgent()
 performance_analyzer = PerformanceAnalyzer(trading_agent)
 yfinance_generator = YFinanceDataGenerator()
+
+# Initialize CoinMarketCap service
+try:
+    api_key = os.getenv("COINMARKETCAP_API_KEY")
+    print(f"DEBUG: COINMARKETCAP_API_KEY present: {bool(api_key)}")
+    if api_key:
+        print(f"DEBUG: Key length: {len(api_key)}")
+        print(f"DEBUG: Key prefix: {api_key[:4]}...")
+    
+    coinmarketcap = CoinMarketCapService()
+except Exception as e:
+    print(f"Warning: CoinMarketCap service initialization failed: {e}")
+    import traceback
+    traceback.print_exc()
+    coinmarketcap = None
 
 # Initialize scheduler service
 scheduler = get_scheduler(interval_minutes=5, symbols=['BTC-USD', 'ETH-USD', 'AAPL', 'TSLA'])
@@ -228,3 +244,78 @@ async def update_scheduler_config(interval_minutes: int = None, symbols: str = N
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# CoinMarketCap API Endpoints
+
+@app.get("/crypto/price/{symbol}")
+async def get_crypto_price(symbol: str):
+    """Get real-time price for a cryptocurrency"""
+    if not coinmarketcap:
+        raise HTTPException(status_code=503, detail="CoinMarketCap service unavailable")
+    
+    try:
+        price_data = await coinmarketcap.get_latest_price(symbol)
+        if price_data:
+            return price_data
+        else:
+            raise HTTPException(status_code=404, detail=f"Price data not found for {symbol}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/crypto/prices")
+async def get_multiple_crypto_prices(symbols: str):
+    """Get real-time prices for multiple cryptocurrencies (comma-separated)"""
+    if not coinmarketcap:
+        raise HTTPException(status_code=503, detail="CoinMarketCap service unavailable")
+    
+    try:
+        symbol_list = [s.strip() for s in symbols.split(',')]
+        price_data = await coinmarketcap.get_multiple_prices(symbol_list)
+        if price_data:
+            return price_data
+        else:
+            raise HTTPException(status_code=404, detail="Price data not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/crypto/global")
+async def get_global_crypto_metrics():
+    """Get global cryptocurrency market metrics"""
+    if not coinmarketcap:
+        raise HTTPException(status_code=503, detail="CoinMarketCap service unavailable")
+    
+    try:
+        metrics = await coinmarketcap.get_global_metrics()
+        if metrics:
+            return metrics
+        else:
+            raise HTTPException(status_code=500, detail="Failed to fetch global metrics")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/crypto/search/{query}")
+async def search_cryptocurrency(query: str):
+    """Search for cryptocurrencies by name or symbol"""
+    if not coinmarketcap:
+        raise HTTPException(status_code=503, detail="CoinMarketCap service unavailable")
+    
+    try:
+        results = await coinmarketcap.search_cryptocurrency(query)
+        return {"results": results, "count": len(results)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/portfolio/value")
+async def get_portfolio_value():
+    """Get current portfolio value (mock data for now)"""
+    # TODO: Integrate with real portfolio tracking
+    return {
+        "total_value": 125430.50,
+        "total_change_24h": 2.35,
+        "positions": [
+            {"symbol": "BTC", "quantity": 0.5, "value": 48000.00},
+            {"symbol": "ETH", "quantity": 5.0, "value": 15000.00},
+            {"symbol": "SOL", "quantity": 100.0, "value": 12000.00}
+        ],
+        "last_updated": "2025-11-23T09:44:00Z"
+    }
