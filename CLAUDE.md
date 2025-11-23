@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is **Fuyu** - an AI-powered trading strategy customization platform called "QuantumTrade". It's a React TypeScript application with a Python FastAPI backend that provides real-time strategy analysis, modification, and chat capabilities for trading algorithms.
+This is **Fuyu** - an AI-powered trading strategy customization platform called "CryptoVault". It's a React TypeScript application with a Python FastAPI backend that provides real-time strategy analysis, modification, and chat capabilities for trading algorithms.
 
 ## Development Commands
 

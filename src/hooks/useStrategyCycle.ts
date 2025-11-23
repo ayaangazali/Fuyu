@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { mockDeck } from '../data/mockDeck';
 
 interface Strategy {
     strategy_id: string;
@@ -161,21 +160,7 @@ export const useStrategyCycle = () => {
         };
     }, [isRunning]);
 
-    // Polling-based performance checking (fallback)
-    useEffect(() => {
-        let interval: NodeJS.Timeout;
-
-        if (isRunning && !isConnected) {
-            // Fallback to polling if WebSocket is not connected
-            interval = setInterval(() => {
-                checkPerformance();
-            }, 5 * 60 * 1000); // 5 minutes
-        }
-
-        return () => {
-            if (interval) clearInterval(interval);
-        };
-    }, [isRunning, isConnected]);
+    // Real-time updates now handled exclusively via WebSocket + backend scheduler
 
     const toggleCycle = async () => {
         if (isRunning) {
@@ -227,76 +212,6 @@ export const useStrategyCycle = () => {
                 addLog('Warning: Could not start backend scheduler. WebSocket updates only.');
             }
         }
-    };
-
-    const checkPerformance = async () => {
-        setStatus('analyzing');
-        addLog('Starting performance analysis (Backend)...');
-
-        try {
-            // In a real app, we'd fetch the latest performance data from an API or file
-            // For now, we'll construct a mock performance object to send to the backend
-            const mockPerformance = {
-                timestamp: new Date().toISOString(),
-                market: "BTC-USD",
-                strategy_id: strategy.strategy_id,
-                signal: "BUY",
-                price: 43500.0,
-                qty: 0.1,
-                position_after: 0.1,
-                pnl_realized: 0,
-                pnl_unrealized: Math.random() * 10 - 3 // Random PnL
-            };
-
-            const response = await fetch('http://localhost:8000/analyze', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    strategy: strategy,
-                    performance: mockPerformance
-                }),
-            });
-
-            if (!response.ok) {
-                throw new Error(`Backend error: ${response.statusText}`);
-            }
-
-            const result = await response.json();
-            addLog(`Analysis complete. Decision: ${result.action.toUpperCase()}`);
-
-            if (result.action === 'keep') {
-                setStatus('idle');
-                addLog(result.feedback);
-            } else if (result.action === 'modify') {
-                setStatus('modifying');
-                addLog(result.feedback);
-                if (result.new_strategy) {
-                    setStrategy(result.new_strategy);
-                    setModificationCount(prev => prev + 1);
-                    addLog('Strategy modified based on AI feedback.');
-                }
-                setStatus('idle');
-            } else if (result.action === 'replace') {
-                setStatus('replacing');
-                addLog(result.feedback);
-                if (result.new_strategy) {
-                    setStrategy(result.new_strategy);
-                    setModificationCount(0);
-                    addLog(`Strategy replaced with: ${result.new_strategy.name}`);
-                }
-                setStatus('idle');
-            }
-
-        } catch (error) {
-            console.error("Analysis failed:", error);
-            addLog(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-            setStatus('idle');
-        }
-
-        setLastAnalysis(new Date());
-        setNextAnalysis(new Date(Date.now() + 5 * 60 * 1000));
     };
 
     // These are now handled by the backend, but we keep empty functions if needed or remove them
