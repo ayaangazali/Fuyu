@@ -38,4 +38,6 @@ class AnalysisResult(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     strategy: Strategy
+    market: str = "crypto"  # crypto, stock, future, forex
     includeMarketData: bool = False
+    includeWebSearch: bool = False

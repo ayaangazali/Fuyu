@@ -3,6 +3,7 @@ import json
 from openai import OpenAI
 from spoon_ai.llm import LLMManager, ConfigurationManager
 from models import Strategy, PerformanceData, AnalysisResult
+from desearch_service import DesearchService
 # Real-time crypto data now handled by yfinance in the system
 
 class TradingStrategyAgent:
@@ -25,6 +26,15 @@ class TradingStrategyAgent:
         except Exception as e:
             print(f"SpoonOS initialization warning: {e}")
             self.spoonos_available = False
+        
+        # Initialize Desearch for web search
+        try:
+            self.desearch = DesearchService()
+            self.desearch_available = True
+        except Exception as e:
+            print(f"Desearch initialization warning: {e}")
+            self.desearch = None
+            self.desearch_available = False
         
         print("TradingStrategyAgent initialized with real-time crypto data capabilities")
 
@@ -108,31 +118,52 @@ class TradingStrategyAgent:
                 new_strategy=None
             )
 
-    async def chat(self, message: str, strategy: Strategy, include_market_data: bool = False) -> str:
+    async def chat(self, message: str, strategy: Strategy, market: str = "crypto", include_market_data: bool = False, include_web_search: bool = False) -> str:
+        # Gather context based on enabled modes
+        context_parts = []
+        
         if include_market_data:
-            # Get live market data for context when requested
             market_data = await self.get_live_market_data("BTC-USD")
-            
+            context_parts.append(f"Current Market Data: {json.dumps(market_data, indent=2)}")
+        
+        if include_web_search and self.desearch_available:
+            # Extract symbol from strategy or use BTC as default
+            symbol = "BTC"  # Could be enhanced to extract from strategy
+            web_data = self.desearch.get_market_news(symbol, timeframe='PAST_24_HOURS')
+            if web_data and web_data.get('success'):
+                context_parts.append(f"\nRecent News & Sentiment:\n{web_data['summary']}")
+                if web_data.get('sources'):
+                    sources_str = "\n".join([f"- {s.get('title', 'Source')}" for s in web_data['sources'][:3]])
+                    context_parts.append(f"\nSources:\n{sources_str}")
+        
+        # Build prompt based on context
+        if context_parts:
+            context_str = "\n\n".join(context_parts)
+            market_label = market.capitalize()
             prompt = f"""
-            You are an expert quantitative trading assistant with access to real-time market data.
+            You are an expert quantitative trading assistant specializing in {market_label} markets with access to real-time data.
             
-            Current Market Data: {json.dumps(market_data, indent=2)}
+            Market Context: {market_label} ({"Cryptocurrencies" if market == "crypto" else "Stocks" if market == "stock" else "Futures" if market == "future" else "Forex"})
+            
+            {context_str}
+            
             Current Strategy Context: {strategy.json()}
             User Message: {message}
             
-            Provide a helpful response incorporating current market conditions and strategy context.
-            Keep it concise unless detailed analysis is specifically requested.
+            Provide a helpful response incorporating the available context and market-specific insights. Keep it concise unless detailed analysis is specifically requested.
             """
-            max_tokens = 600
+            max_tokens = 800
         else:
-            # Normal chat mode without market data
+            # Normal chat mode
+            market_label = market.capitalize()
             prompt = f"""
-            You are a helpful trading assistant. 
+            You are a helpful trading assistant specializing in {market_label} markets.
             
+            Market Context: {market_label}
             Current Strategy: {strategy.name} (ID: {strategy.strategy_id})
             User Message: {message}
             
-            Provide a helpful response about the trading strategy. Keep it concise and focused.
+            Provide a helpful response about the trading strategy with {market_label}-specific insights. Keep it concise and focused.
             """
             max_tokens = 400
 

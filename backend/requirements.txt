@@ -10,3 +10,4 @@ yfinance
 pandas
 numpy
 websockets
+desearch-py

@@ -19,8 +19,7 @@ const Index = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-foreground">
-                <span className="text-neon-cyan">Quantum</span>
-                <span className="text-neon-purple">Trade</span>
+                <span className="text-neon-purple">CryptoVault</span>
               </h1>
               <p className="text-sm text-muted-foreground mt-1">
                 AI-Powered Strategy Customization
@@ -53,15 +52,6 @@ const Index = () => {
                 <Play className="w-4 h-4 mr-2" />
                 {isRunning ? "Stop Cycle" : "Start Auto-Cycle"}
               </Button>
-
-              <div className="flex items-center gap-2">
-                <div className="px-3 py-1 rounded-lg bg-primary/10 border border-primary/50">
-                  <span className="text-xs font-mono text-primary">BTC/USD</span>
-                </div>
-                <div className="px-3 py-1 rounded-lg bg-secondary/10 border border-secondary/50">
-                  <span className="text-xs font-mono text-secondary">$43,521.00</span>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -71,39 +61,66 @@ const Index = () => {
       <MarketTabs value={selectedMarket} onValueChange={setSelectedMarket} />
 
       {/* Main Content */}
-      <main className="container mx-auto px-6 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column: Chat & Logs */}
-          <div className="lg:col-span-1 space-y-6">
-            <div className="h-[500px]">
-              <ChatInterface strategy={strategy} />
-            </div>
-            
-            {/* System Logs */}
-            <div className="bg-card/30 border border-border/50 rounded-lg p-4 h-[200px] overflow-hidden flex flex-col">
-              <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-2">
-                <RefreshCw className="w-3 h-3" /> System Logs
-              </h3>
-              <div className="flex-1 overflow-y-auto space-y-1 font-mono text-[10px]">
-                {logs.map((log, i) => (
-                  <div key={i} className="text-muted-foreground border-l-2 border-border pl-2 py-0.5">
-                    {log}
-                  </div>
-                ))}
-              </div>
+      <main className="container mx-auto px-6 py-8 max-w-6xl">
+        {/* Centered Chat Interface */}
+        <div className="mb-8">
+          <div className="max-w-4xl mx-auto">
+            <div className="h-[600px] shadow-2xl">
+              <ChatInterface strategy={strategy} market={selectedMarket} />
             </div>
           </div>
+        </div>
 
-          {/* Right Column: Strategy Rules */}
-          <div className="lg:col-span-2">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-foreground">Active Strategy: {strategy.name}</h2>
+        {/* Active Strategy & System Logs Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          {/* Active Strategy Info */}
+          <div className="lg:col-span-2 bg-card/30 border border-border/50 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-bold text-foreground">Active Strategy: {strategy.name}</h3>
               <Badge variant="outline" className="font-mono text-xs">
                 ID: {strategy.strategy_id}
               </Badge>
             </div>
-            <StrategyRules strategy={strategy} />
+            <div className="text-sm text-muted-foreground space-y-2">
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <p className="text-xs text-muted-foreground/70 mb-1">Max Position</p>
+                  <p className="font-mono text-neon-cyan">{(strategy.risk_profile.max_position_pct * 100).toFixed(0)}%</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground/70 mb-1">Stop Loss</p>
+                  <p className="font-mono text-red-500">{(strategy.risk_profile.stop_loss_pct * 100).toFixed(0)}%</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground/70 mb-1">Take Profit</p>
+                  <p className="font-mono text-green-500">{(strategy.risk_profile.take_profit_pct * 100).toFixed(0)}%</p>
+                </div>
+              </div>
+            </div>
           </div>
+
+          {/* System Logs */}
+          <div className="bg-card/30 border border-border/50 rounded-lg p-4 max-h-[200px] overflow-hidden flex flex-col">
+            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-2">
+              <RefreshCw className="w-3 h-3" /> System Logs
+            </h3>
+            <div className="flex-1 overflow-y-auto space-y-1 font-mono text-[10px]">
+              {logs.map((log, i) => (
+                <div key={i} className="text-muted-foreground border-l-2 border-border pl-2 py-0.5">
+                  {log}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Strategy Rules Section */}
+        <div className="bg-card/20 border border-border/50 rounded-lg p-6">
+          <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+            <div className="w-1 h-6 bg-gradient-to-b from-neon-cyan to-neon-purple rounded-full"></div>
+            Strategy Configuration
+          </h2>
+          <StrategyRules strategy={strategy} />
         </div>
       </main>
 

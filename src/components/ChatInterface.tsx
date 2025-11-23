@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Bot, User, Sparkles, TrendingUp } from "lucide-react";
+import { Send, Bot, User, Sparkles, TrendingUp, Globe } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Message {
@@ -14,9 +14,10 @@ interface Message {
 
 interface ChatInterfaceProps {
   strategy: any; // Using any for flexibility
+  market: string; // "crypto" | "stock" | "future" | "forex"
 }
 
-export const ChatInterface = ({ strategy }: ChatInterfaceProps) => {
+export const ChatInterface = ({ strategy, market }: ChatInterfaceProps) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
@@ -28,6 +29,7 @@ export const ChatInterface = ({ strategy }: ChatInterfaceProps) => {
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [includeMarketData, setIncludeMarketData] = useState(false);
+  const [includeWebSearch, setIncludeWebSearch] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -62,7 +64,9 @@ export const ChatInterface = ({ strategy }: ChatInterfaceProps) => {
         body: JSON.stringify({
           message: newUserMessage.text,
           strategy: strategy,
+          market: market,
           includeMarketData: includeMarketData,
+          includeWebSearch: includeWebSearch,
         }),
       });
 
@@ -101,7 +105,10 @@ export const ChatInterface = ({ strategy }: ChatInterfaceProps) => {
         </div>
         <div>
           <h3 className="font-semibold text-foreground">AI Strategy Assistant</h3>
-          <p className="text-xs text-muted-foreground flex items-center gap-1">
+          <p className="text-xs text-muted-foreground/80 mt-0.5">
+            Ask questions about your trading strategies, get real-time insights, and optimize your approach
+          </p>
+          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
             <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
             Online
           </p>
@@ -169,8 +176,24 @@ export const ChatInterface = ({ strategy }: ChatInterfaceProps) => {
             <TrendingUp className="w-3 h-3 mr-1" />
             {includeMarketData ? "Market Data ON" : "Market Data OFF"}
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIncludeWebSearch(!includeWebSearch)}
+            className={`text-xs transition-all ${
+              includeWebSearch 
+                ? "bg-neon-purple/20 border-neon-purple/50 text-neon-purple" 
+                : "bg-background/50 border-border/50 text-muted-foreground"
+            }`}
+          >
+            <Globe className="w-3 h-3 mr-1" />
+            {includeWebSearch ? "Web Search ON" : "Web Search OFF"}
+          </Button>
           <span className="text-xs text-muted-foreground">
-            {includeMarketData ? "Includes live market context" : "Normal chat mode"}
+            {includeMarketData && includeWebSearch ? "Full context mode" : 
+             includeMarketData ? "Price data only" : 
+             includeWebSearch ? "News & sentiment only" : 
+             "Normal chat"}
           </span>
         </div>
         <div className="flex gap-2">
