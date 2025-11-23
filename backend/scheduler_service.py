@@ -7,7 +7,6 @@ import asyncio
 import threading
 from datetime import datetime, timedelta
 from typing import Optional, List
-from pathlib import Path
 from yfinance_data_generator import YFinanceDataGenerator
 
 class SchedulerService:
