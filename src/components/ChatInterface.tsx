@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Bot, User, Sparkles, TrendingUp, Globe } from "lucide-react";
+import { Send, Bot, TrendingUp, Globe } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Message {
