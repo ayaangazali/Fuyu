@@ -38,7 +38,20 @@ const Index = () => {
     const [chartData, setChartData] = useState<any[]>([]);
     const [riskAnalysis, setRiskAnalysis] = useState<string>("Loading risk analysis...");
     const [riskAnalysisTime, setRiskAnalysisTime] = useState<string>("");
-    const [orderHistory, setOrderHistory] = useState<any[]>([]);
+
+    // Order history data matching screenshot
+    const orderHistory = [
+        { symbol: 'NASDAQ:NVDA', icon: '🟢', side: 'Sell', type: 'Market', qty: 5, limitPrice: '', stopPrice: '', fillPrice: '139.55', status: 'Filled', statusColor: 'text-green-400', time: '2024-12-10 06:35:23' },
+        { symbol: 'NASDAQ:AMZN', icon: '🟠', side: 'Sell', type: 'Market', qty: 5, limitPrice: '', stopPrice: '', fillPrice: '', status: 'Rejected', statusColor: 'text-red-400', time: '2024-08-06 14:20:24' },
+        { symbol: 'NASDAQ:NVDA', icon: '🟢', side: 'Sell', type: 'Market', qty: 5, limitPrice: '', stopPrice: '', fillPrice: '', status: 'Rejected', statusColor: 'text-red-400', time: '2024-08-02 14:06:45' },
+        { symbol: 'NASDAQ:NVDA', icon: '🟢', side: 'Sell', type: 'Market', qty: 5, limitPrice: '', stopPrice: '', fillPrice: '', status: 'Rejected', statusColor: 'text-red-400', time: '2024-07-30 02:53:46' },
+        { symbol: 'NASDAQ:NVDA', icon: '🟢', side: 'Sell', type: 'Market', qty: 5, limitPrice: '', stopPrice: '', fillPrice: '', status: 'Rejected', statusColor: 'text-red-400', time: '2024-07-05 00:59:14' },
+        { symbol: 'NYSE:BRK.B', icon: '🅱️', side: 'Sell', type: 'Market', qty: 1, limitPrice: '', stopPrice: '', fillPrice: '', status: 'Rejected', statusColor: 'text-red-400', time: '2024-07-05 00:59:08' },
+        { symbol: 'NASDAQ:NVDA', icon: '🟢', side: 'Sell', type: 'Market', qty: 5, limitPrice: '', stopPrice: '', fillPrice: '', status: 'Rejected', statusColor: 'text-red-400', time: '2024-06-29 00:58:37' },
+        { symbol: 'NASDAQ:AMZN', icon: '🟠', side: 'Buy', type: 'Limit', qty: 4, limitPrice: '184.68', stopPrice: '', fillPrice: '184.68', status: 'Filled', statusColor: 'text-green-400', time: '2024-05-17 11:55:25' },
+        { symbol: 'NASDAQ:AMZN', icon: '🟠', side: 'Buy', type: 'Limit', qty: 1, limitPrice: '184.43', stopPrice: '', fillPrice: '184.41', status: 'Filled', statusColor: 'text-green-400', time: '2024-05-17 11:53:38' },
+        { symbol: 'AMEX:IVV', icon: 'ℹ️', side: 'Buy', type: 'Stop', qty: 1, limitPrice: '', stopPrice: '530.99', fillPrice: '531.08', status: 'Filled', statusColor: 'text-green-400', time: '2024-05-17 11:52:16' },
+    ];
 
     const fetchHistory = async (period: string) => {
         try {
@@ -68,17 +81,18 @@ const Index = () => {
         }
     };
 
-    const fetchOrderHistory = async () => {
-        try {
-            const res = await fetch("http://localhost:8000/portfolio/orders");
-            if (res.ok) {
-                const data = await res.json();
-                setOrderHistory(data.orders || []);
-            }
-        } catch (error) {
-            console.error("Error fetching order history:", error);
-        }
-    };
+    // TODO: Implement order history fetching
+    // const fetchOrderHistory = async () => {
+    //     try {
+    //         const res = await fetch("http://localhost:8000/portfolio/orders");
+    //         if (res.ok) {
+    //             const data = await res.json();
+    //             setOrderHistory(data.orders || []);
+    //         }
+    //     } catch (error) {
+    //         console.error("Error fetching order history:", error);
+    //     }
+    // };
 
     const fetchData = async () => {
         setIsLoading(true);
@@ -108,7 +122,7 @@ const Index = () => {
             fetchRiskAnalysis();
 
             // 5. Fetch Order History
-            fetchOrderHistory();
+            // fetchOrderHistory();
 
         } catch (error) {
 
@@ -206,7 +220,20 @@ const Index = () => {
                                     {isTotalGainPositive ? '+' : ''}{totalGainValue.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} 1Y
                                 </span>
                             </div>
-                            <p className="text-sm text-gray-500">Mar 1, 5:54:32 PM UTC-5 · USD · Disclaimer</p>
+                            <p className="text-sm text-gray-500">
+                                {portfolioData 
+                                    ? new Date(portfolioData.last_updated).toLocaleString('en-US', { 
+                                        month: 'short', 
+                                        day: 'numeric', 
+                                        hour: 'numeric', 
+                                        minute: '2-digit', 
+                                        second: '2-digit',
+                                        hour12: true,
+                                        timeZoneName: 'short'
+                                    })
+                                    : "Loading..."
+                                } · USD · Disclaimer
+                            </p>
                         </div>
 
                         {/* Period Selector */}
@@ -239,14 +266,31 @@ const Index = () => {
                                     <XAxis 
                                         dataKey="date" 
                                         stroke="#999" 
-                                        style={{ fontSize: '12px' }} 
+                                        style={{ fontSize: '12px' }}
                                         tickFormatter={(value) => {
                                             const date = new Date(value);
-                                            if (selectedPeriod === '1M' || selectedPeriod === '6M') {
-                                                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                                            // Format based on selected period
+                                            switch (selectedPeriod) {
+                                                case '1M':
+                                                    // Show day and month for 1 month
+                                                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                                                case '6M':
+                                                case 'YTD':
+                                                    // Show month and day for 6 months / YTD
+                                                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                                                case '1Y':
+                                                    // Show month and year for 1 year
+                                                    return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+                                                case '5Y':
+                                                case 'MAX':
+                                                    // Show month and year for 5 years / MAX
+                                                    return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+                                                default:
+                                                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                                             }
-                                            return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
                                         }}
+                                        interval="preserveStartEnd"
+                                        minTickGap={50}
                                     />
                                     <YAxis 
                                         stroke="#999" 
@@ -257,6 +301,7 @@ const Index = () => {
                                     <Tooltip 
                                         formatter={(value: number) => [`$${value.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, "Value"]}
                                         labelFormatter={(label) => new Date(label).toLocaleDateString('en-US')}
+                                        labelStyle={{ color: '#000000', fontWeight: '500' }}
                                     />
                                     <Area type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorValue)" />
                                 </AreaChart>

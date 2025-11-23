@@ -123,7 +123,7 @@ async def get_portfolio_risk_analysis(
     try:
         # Get current holdings
         portfolio_value = await portfolio_service.calculate_portfolio_value()
-        holdings = [p.symbol for p in portfolio_value.positions]
+        holdings = [p["symbol"] for p in portfolio_value["positions"]]
         holdings_str = ", ".join(holdings)
         
         # Construct prompt
@@ -131,11 +131,17 @@ async def get_portfolio_risk_analysis(
         
         # Use agent to get analysis with web search
         # We use a dummy strategy object as it's required by the chat method
+        from models import RiskProfile, StrategyLogic
         dummy_strategy = Strategy(
             strategy_id="portfolio_risk",
             name="Portfolio Risk Analysis",
-            type="analysis",
-            parameters={}
+            description="AI-powered portfolio risk analysis",
+            risk_profile=RiskProfile(
+                max_position_pct=100.0,
+                stop_loss_pct=0.0,
+                take_profit_pct=0.0
+            ),
+            logic=[]
         )
         
         analysis = await trading_agent.chat(
@@ -153,23 +159,10 @@ async def get_portfolio_risk_analysis(
         
     except Exception as e:
         print(f"Risk analysis error: {e}")
+        import traceback
+        traceback.print_exc()
         # Fallback if agent fails
         return {
             "analysis": "Market volatility remains high. Diversification recommended.",
             "timestamp": datetime.datetime.now().strftime("%d%b %Y %H%M").lower()
         }
-
-@router.get("/portfolio/orders")
-async def get_portfolio_orders(
-    portfolio_service: PortfolioService = Depends(get_portfolio_service)
-):
-    """Get order history for the portfolio"""
-    if not portfolio_service:
-        raise HTTPException(status_code=503, detail="Portfolio service unavailable")
-    
-    try:
-        orders = portfolio_service.generate_order_history()
-        return {"orders": orders}
-    except Exception as e:
-        print(f"Error generating order history: {e}")
-        raise HTTPException(status_code=500, detail=str(e))

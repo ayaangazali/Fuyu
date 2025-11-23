@@ -54,7 +54,6 @@ if coinmarketcap:
 # Dependency providers
 from crypto_endpoints import router as crypto_router, get_coinmarketcap_service, get_portfolio_service, get_trading_agent
 
-
 def get_cmc_service_impl():
     return coinmarketcap
 
@@ -63,7 +62,6 @@ def get_portfolio_service_impl():
 
 def get_trading_agent_impl():
     return trading_agent
-
 
 # Include crypto router with dependencies
 app.include_router(
