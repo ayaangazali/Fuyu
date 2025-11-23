@@ -159,16 +159,20 @@ class TradingStrategyAgent:
         context_parts = []
         
         if include_market_data:
-            # Use market-appropriate symbol
-            symbol = self._get_symbol_for_market(market)
+            symbol_map = {
+                "crypto": "BTC-USD",
+                "stock": "SPY",
+                "future": "ES=F",
+                "forex": "EURUSD=X"
+            }
+            symbol = symbol_map.get(market, "BTC-USD")
             market_data = await self.get_live_market_data(symbol)
-            market_label = market.capitalize()
-            context_parts.append(f"Current {market_label} Market Data ({symbol}): {json.dumps(market_data, indent=2)}")
+            context_parts.append(f"Current Market Data: {json.dumps(market_data, indent=2)}")
         
         if include_web_search and self.desearch_available:
-            # Use market-appropriate search term
-            search_term = self._get_search_term_for_market(market)
-            web_data = await self.desearch.get_market_news(search_term, timeframe='PAST_24_HOURS')
+            # Extract symbol from strategy or use BTC as default
+            symbol = "BTC"  # Could be enhanced to extract from strategy
+            web_data = await self.desearch.get_market_news(symbol, timeframe='PAST_24_HOURS')
             if web_data and web_data.get('success'):
                 context_parts.append(f"\nRecent News & Sentiment:\n{web_data['summary']}")
                 if web_data.get('sources'):

@@ -101,10 +101,9 @@ class DesearchService:
         except Exception as e:
             print(f"Desearch search error: {e}")
             return {
-                "summary": f"Search unavailable: {str(e)}",
+                "summary": "Search unavailable at this time. Please try again later.",
                 "sources": [],
                 "query": query,
                 "timeframe": timeframe,
-                "success": False,
-                "error": str(e)
+                "success": False
             }
