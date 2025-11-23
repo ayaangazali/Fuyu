@@ -15,6 +15,8 @@ interface Position {
 interface PortfolioData {
     total_value: number;
     total_change_24h: number;
+    total_unrealized_pl: number;
+    total_change_percent: number;
     positions: Position[];
     last_updated: string;
 }
@@ -34,20 +36,9 @@ const Index = () => {
     const [marketPrices, setMarketPrices] = useState<Record<string, CryptoPrice>>({});
     const [selectedPeriod, setSelectedPeriod] = useState("1Y");
     const [chartData, setChartData] = useState<any[]>([]);
-
-    // Order history data matching screenshot
-    const orderHistory = [
-        { symbol: 'NASDAQ:NVDA', icon: '🟢', side: 'Sell', type: 'Market', qty: 5, limitPrice: '', stopPrice: '', fillPrice: '139.55', status: 'Filled', statusColor: 'text-green-400', time: '2024-12-10 06:35:23' },
-        { symbol: 'NASDAQ:AMZN', icon: '🟠', side: 'Sell', type: 'Market', qty: 5, limitPrice: '', stopPrice: '', fillPrice: '', status: 'Rejected', statusColor: 'text-red-400', time: '2024-08-06 14:20:24' },
-        { symbol: 'NASDAQ:NVDA', icon: '🟢', side: 'Sell', type: 'Market', qty: 5, limitPrice: '', stopPrice: '', fillPrice: '', status: 'Rejected', statusColor: 'text-red-400', time: '2024-08-02 14:06:45' },
-        { symbol: 'NASDAQ:NVDA', icon: '🟢', side: 'Sell', type: 'Market', qty: 5, limitPrice: '', stopPrice: '', fillPrice: '', status: 'Rejected', statusColor: 'text-red-400', time: '2024-07-30 02:53:46' },
-        { symbol: 'NASDAQ:NVDA', icon: '🟢', side: 'Sell', type: 'Market', qty: 5, limitPrice: '', stopPrice: '', fillPrice: '', status: 'Rejected', statusColor: 'text-red-400', time: '2024-07-05 00:59:14' },
-        { symbol: 'NYSE:BRK.B', icon: '🅱️', side: 'Sell', type: 'Market', qty: 1, limitPrice: '', stopPrice: '', fillPrice: '', status: 'Rejected', statusColor: 'text-red-400', time: '2024-07-05 00:59:08' },
-        { symbol: 'NASDAQ:NVDA', icon: '🟢', side: 'Sell', type: 'Market', qty: 5, limitPrice: '', stopPrice: '', fillPrice: '', status: 'Rejected', statusColor: 'text-red-400', time: '2024-06-29 00:58:37' },
-        { symbol: 'NASDAQ:AMZN', icon: '🟠', side: 'Buy', type: 'Limit', qty: 4, limitPrice: '184.68', stopPrice: '', fillPrice: '184.68', status: 'Filled', statusColor: 'text-green-400', time: '2024-05-17 11:55:25' },
-        { symbol: 'NASDAQ:AMZN', icon: '🟠', side: 'Buy', type: 'Limit', qty: 1, limitPrice: '184.43', stopPrice: '', fillPrice: '184.41', status: 'Filled', statusColor: 'text-green-400', time: '2024-05-17 11:53:38' },
-        { symbol: 'AMEX:IVV', icon: 'ℹ️', side: 'Buy', type: 'Stop', qty: 1, limitPrice: '', stopPrice: '530.99', fillPrice: '531.08', status: 'Filled', statusColor: 'text-green-400', time: '2024-05-17 11:52:16' },
-    ];
+    const [riskAnalysis, setRiskAnalysis] = useState<string>("Loading risk analysis...");
+    const [riskAnalysisTime, setRiskAnalysisTime] = useState<string>("");
+    const [orderHistory, setOrderHistory] = useState<any[]>([]);
 
     const fetchHistory = async (period: string) => {
         try {
@@ -58,6 +49,34 @@ const Index = () => {
             }
         } catch (error) {
             console.error("Error fetching history:", error);
+        }
+    };
+
+    const fetchRiskAnalysis = async () => {
+        try {
+            const res = await fetch("http://localhost:8000/portfolio/risk-analysis");
+            if (res.ok) {
+                const data = await res.json();
+                setRiskAnalysis(data.analysis);
+                setRiskAnalysisTime(data.timestamp);
+            } else {
+                setRiskAnalysis("Risk analysis unavailable.");
+            }
+        } catch (error) {
+            console.error("Error fetching risk analysis:", error);
+            setRiskAnalysis("Failed to load risk analysis.");
+        }
+    };
+
+    const fetchOrderHistory = async () => {
+        try {
+            const res = await fetch("http://localhost:8000/portfolio/orders");
+            if (res.ok) {
+                const data = await res.json();
+                setOrderHistory(data.orders || []);
+            }
+        } catch (error) {
+            console.error("Error fetching order history:", error);
         }
     };
 
@@ -85,7 +104,14 @@ const Index = () => {
             // 3. Fetch History
             await fetchHistory(selectedPeriod);
 
+            // 4. Fetch Risk Analysis (non-blocking)
+            fetchRiskAnalysis();
+
+            // 5. Fetch Order History
+            fetchOrderHistory();
+
         } catch (error) {
+
             console.error("Error fetching data:", error);
         } finally {
             setIsLoading(false);
@@ -99,6 +125,15 @@ const Index = () => {
     useEffect(() => {
         fetchHistory(selectedPeriod);
     }, [selectedPeriod]);
+
+    // Calculate Day Gain Value
+    const dayGainValue = portfolioData ? portfolioData.total_value * (portfolioData.total_change_24h / 100) : 0;
+    const isDayGainPositive = portfolioData ? portfolioData.total_change_24h >= 0 : false;
+
+    // Total Gain uses total_unrealized_pl and total_change_percent from API
+    const totalGainValue = portfolioData ? portfolioData.total_unrealized_pl : 0;
+    const totalGainPercent = portfolioData ? portfolioData.total_change_percent : 0;
+    const isTotalGainPositive = totalGainValue >= 0;
 
     return (
         <div className="min-h-screen bg-white">
@@ -123,8 +158,8 @@ const Index = () => {
                     </div>
                     <div className="space-y-1">
                         <p className="text-gray-400 text-xs font-medium">Unrealized P&L</p>
-                        <p className="font-semibold text-base text-green-400">
-                             {portfolioData ? `+$${(portfolioData.total_value * (portfolioData.total_change_24h / 100)).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : "---"}
+                        <p className={`font-semibold text-base ${isTotalGainPositive ? 'text-green-400' : 'text-red-400'}`}>
+                             {portfolioData ? (isTotalGainPositive ? '+' : '') + `$${totalGainValue.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : "---"}
                         </p>
                     </div>
                     <div className="space-y-1">
@@ -163,11 +198,13 @@ const Index = () => {
                                 <h2 className="text-4xl lg:text-5xl font-bold text-gray-900">
                                     {portfolioData ? `$${portfolioData.total_value.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : "$---"}
                                 </h2>
-                                <span className={`px-3 py-1.5 rounded-lg text-sm font-semibold flex items-center gap-1.5 whitespace-nowrap ${portfolioData && portfolioData.total_change_24h >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                    {portfolioData && portfolioData.total_change_24h >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-                                    {portfolioData ? `${Math.abs(portfolioData.total_change_24h)}%` : "--%"}
+                                <span className={`px-3 py-1.5 rounded-lg text-sm font-semibold flex items-center gap-1.5 whitespace-nowrap ${isDayGainPositive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                    {isDayGainPositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                                    {portfolioData ? `${Math.abs(portfolioData.total_change_24h).toFixed(2)}%` : "--%"}
                                 </span>
-                                <span className="text-green-600 text-base lg:text-lg font-medium whitespace-nowrap">+34,085.34 1Y</span>
+                                <span className={`${isTotalGainPositive ? 'text-green-600' : 'text-red-600'} text-base lg:text-lg font-medium whitespace-nowrap`}>
+                                    {isTotalGainPositive ? '+' : ''}{totalGainValue.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} 1Y
+                                </span>
                             </div>
                             <p className="text-sm text-gray-500">Mar 1, 5:54:32 PM UTC-5 · USD · Disclaimer</p>
                         </div>
@@ -237,30 +274,42 @@ const Index = () => {
                                 <div className="space-y-2">
                                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">DAY GAIN</p>
                                     <div className="bg-white border border-gray-200 p-5 rounded-xl shadow-sm min-h-[100px] flex flex-col justify-center">
-                                        <p className="text-2xl font-bold text-red-600 whitespace-nowrap">-$1,573.38</p>
-                                        <p className="text-sm text-red-600 flex items-center gap-1 mt-2">
-                                            <TrendingDown className="w-4 h-4" />
-                                            1.25%
+                                        <p className={`text-2xl font-bold whitespace-nowrap ${isDayGainPositive ? 'text-green-600' : 'text-red-600'}`}>
+                                            {portfolioData ? (isDayGainPositive ? '+' : '') + `$${Math.abs(dayGainValue).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : "---"}
+                                        </p>
+                                        <p className={`text-sm flex items-center gap-1 mt-2 ${isDayGainPositive ? 'text-green-600' : 'text-red-600'}`}>
+                                            {isDayGainPositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                                            {portfolioData ? `${Math.abs(portfolioData.total_change_24h).toFixed(2)}%` : "--%"}
                                         </p>
                                     </div>
                                 </div>
                                 <div className="space-y-2">
                                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">TOTAL GAIN</p>
                                     <div className="bg-white border border-gray-200 p-5 rounded-xl shadow-sm min-h-[100px] flex flex-col justify-center">
-                                        <p className={`text-2xl font-bold whitespace-nowrap ${portfolioData && portfolioData.total_change_24h >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                            {portfolioData ? (portfolioData.total_change_24h >= 0 ? '+' : '-') : ''}
-                                            {portfolioData ? `$${Math.abs(portfolioData.total_value * (portfolioData.total_change_24h / 100)).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : "---"}
+                                        <p className={`text-2xl font-bold whitespace-nowrap ${isTotalGainPositive ? 'text-green-600' : 'text-red-600'}`}>
+                                            {portfolioData ? (isTotalGainPositive ? '+' : '') + `$${Math.abs(totalGainValue).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : "---"}
                                         </p>
-                                        <p className={`text-sm flex items-center gap-1 mt-2 ${portfolioData && portfolioData.total_change_24h >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                            {portfolioData && portfolioData.total_change_24h >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-                                            {portfolioData ? `${Math.abs(portfolioData.total_change_24h)}%` : "--%"}
+                                        <p className={`text-sm flex items-center gap-1 mt-2 ${isTotalGainPositive ? 'text-green-600' : 'text-red-600'}`}>
+                                            {isTotalGainPositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                                            {portfolioData ? `${Math.abs(totalGainPercent).toFixed(2)}%` : "--%"}
                                         </p>
                                     </div>
                                 </div>
                             </div>
-                            <div className="border border-gray-300 bg-white p-6 rounded-xl shadow-sm">
-                                <p className="text-sm text-gray-700 text-center font-medium leading-relaxed">Risk analysis as of 11nov 2025 1130</p>
+                            <div className="space-y-2">
+                                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">RISK ANALYSIS</p>
+                                <div className="border border-gray-300 bg-white p-6 rounded-xl shadow-sm">
+                                    <p className="text-sm text-gray-700 font-medium leading-relaxed">
+                                        {riskAnalysis}
+                                    </p>
+                                    {riskAnalysisTime && (
+                                        <p className="text-xs text-gray-400 mt-2 text-right">
+                                            Analysis as of {riskAnalysisTime}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
+
                         </CardContent>
                     </Card>
                 </div>
@@ -349,12 +398,6 @@ const Index = () => {
                                                     <td className="px-4 py-3 text-gray-500">
                                                         {currentValue.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0})}
                                                     </td>
-                                                    <td className="px-4 py-3">
-                                                        <div className="flex items-center gap-2 text-gray-400">
-                                                            <button className="hover:text-gray-600">✏️</button>
-                                                            <button className="hover:text-gray-600">✕</button>
-                                                        </div>
-                                                    </td>
                                                 </tr>
                                             );
                                         })}
@@ -387,21 +430,15 @@ const Index = () => {
                                             <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
                                             <th className="text-left px-4 py-3 font-medium text-gray-600">Commission</th>
                                             <th className="text-left px-4 py-3 font-medium text-gray-600">Placing Time</th>
-                                            <th className="text-left px-4 py-3 font-medium text-gray-600"></th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {orderHistory.map((order, idx) => (
                                             <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                                                 <td className="px-4 py-3">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-xs font-semibold text-green-600">
-                                                            {order.symbol.split(':')[0].substring(0, 2)}
-                                                        </div>
-                                                        <span className={`px-3 py-1.5 rounded-md font-medium ${order.symbol.includes('NVDA') && idx === 2 ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}`}>
-                                                            {order.symbol}
-                                                        </span>
-                                                    </div>
+                                                    <span className="px-3 py-1.5 rounded-md font-medium bg-gray-100 text-gray-700">
+                                                        {order.symbol}
+                                                    </span>
                                                 </td>
                                                 <td className={`px-4 py-3 font-medium ${order.side === 'Buy' ? 'text-blue-600' : 'text-red-600'}`}>
                                                     {order.side}
@@ -416,11 +453,6 @@ const Index = () => {
                                                 </td>
                                                 <td className="px-4 py-3 text-gray-400">-</td>
                                                 <td className="px-4 py-3 text-gray-500 text-xs">{order.time}</td>
-                                                <td className="px-4 py-3">
-                                                    {order.status === 'Rejected' && (
-                                                        <span className="text-red-500 text-lg">⚠️</span>
-                                                    )}
-                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>
