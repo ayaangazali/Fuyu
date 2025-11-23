@@ -1,0 +1,6 @@
+.venv
+.env
+
+performance_data
+
+__pycache__
